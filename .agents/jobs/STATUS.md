@@ -18,10 +18,10 @@ the run and waits for the human.
 | 09 | COM backend | 08 | isolated + shared | in-progress | 1 | | |
 | 10 | COM worker | 08 | | done | 1 | 88ba64e | |
 | 11 | Session service | 05, 06, 07, 10 | | done | 1 | 1bc55ed | |
-| 12 | CLI core commands | 11 | | todo | 0 | | |
+| 12 | CLI core commands | 11 | | done | 1 | 6aa3a4f | |
 | 13 | CLI management commands | 12 | | todo | 0 | | |
 | 14 | End-to-end CLI tests against real Word | 09, 13 | isolated + shared | todo | 0 | | |
-| 15 | HTTP API | 11 | | todo | 0 | | |
+| 15 | HTTP API | 11 | | in-progress | 1 | | |
 | 16 | Web UI and `serve` | 15, 13 | | todo | 0 | | |
 | 17 | UI smoke tests (Playwright) | 16 | | todo | 0 | | |
 | 18 | Tray app, single instance, `open`, autostart | 16 | | todo | 0 | | |
