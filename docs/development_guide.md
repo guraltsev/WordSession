@@ -35,6 +35,23 @@ set WORD_SESSION_TEST_WORD=1
 uv run pytest -m word
 ```
 
+## Building the Windows bundle
+
+```text
+powershell -ExecutionPolicy Bypass -File packaging/build.ps1
+powershell -ExecutionPolicy Bypass -File packaging/smoke_test.ps1 -Dist dist\WordSession
+```
+
+`build.ps1` runs `uv sync --frozen`, PyInstaller with `packaging/word-session.spec`
+(onedir: console `word-session.exe` and windowed `word-session-app.exe` in one
+`dist\WordSession` folder), copies the legacy `.cmd` shims from
+`packaging/shims/` next to the executables, and zips the folder to
+`dist\WordSession-<version>-win64.zip`. Pass `-NoSync` to skip `uv sync` (for
+example when an executable in `.venv` is locked by a running process).
+`smoke_test.ps1` exercises the built executable against the fake Word backend
+(`--version`, `doctor`, `save`, `list`, and `serve` with a health request;
+`-SkipServe` omits the last). Both are also run by CI, which uploads the zip.
+
 ## Where data lives
 
 Paths come from `platformdirs` (available after job 03). `WORD_SESSION_HOME`

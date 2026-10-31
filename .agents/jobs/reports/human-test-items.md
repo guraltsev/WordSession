@@ -42,3 +42,11 @@
 ## Job 19
 1. `word-session --demo app`, set interval 1 minute in Settings with a changing demo state: an `auto` session appears within about a minute.
 2. Untick "Autosave" in the tray: no new `auto` sessions appear.
+
+## Job 20
+1. Run `packaging\build.ps1` (without `-NoSync`) on a clean checkout with nothing running from `.venv`. Expected: zip built.
+2. Double-click `dist\WordSession\word-session-app.exe` (or a shortcut with `--demo`). Expected: tray icon appears and the manager opens in the browser with styling; quit from the tray menu.
+3. Run `dist\WordSession\word-session-WriteSession.cmd` and `word-session-GetDocuments.cmd` with real Word open. Expected: session saved / documents listed; window pauses only on error.
+4. Run `word-session-LoadSession.cmd` with no argument and with a session file path. Expected: latest / that session restored.
+5. Check exe icon and Properties > Details (version 0.1.0) in Explorer.
+
