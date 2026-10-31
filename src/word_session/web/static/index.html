@@ -3,9 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>Word Session</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
-<p>UI arrives in job 16</p>
+<a class="skip-link" href="#app">Skip to content</a>
+<header class="topbar">
+  <h1 class="brand">Word Session</h1>
+  <nav id="nav" aria-label="Main">
+    <a href="#/sessions" data-route="sessions">Sessions</a>
+    <a href="#/now" data-route="now">Open now</a>
+    <a href="#/settings" data-route="settings">Settings</a>
+    <a href="#/diagnostics" data-route="diagnostics">Diagnostics</a>
+  </nav>
+  <p id="word-status" class="word-status" role="status">
+    <span id="word-dot" class="dot" aria-hidden="true"></span>
+    <span id="word-status-text">Word: checking</span>
+  </p>
+</header>
+<div id="banner" class="banner" role="alert" hidden>
+  Word Session is not running — reopen it from the tray
+</div>
+<main id="app" tabindex="-1"></main>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>

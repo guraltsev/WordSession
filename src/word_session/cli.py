@@ -4,7 +4,8 @@ Call ``main(argv)`` to run a command and ``app_main()`` for the console
 script. The everyday commands are ``save``, ``restore`` (alias ``load``),
 ``current``, ``list`` and ``show``; the management commands are ``rename``,
 ``delete``, ``pin``, ``unpin``, ``notes``, ``prune``, ``diff``,
-``import-legacy`` and ``doctor``. Add ``--json`` for one machine-readable
+``import-legacy`` and ``doctor``; ``serve`` runs the browser manager without
+the tray. Add ``--json`` for one machine-readable
 JSON document on stdout. Exit codes are stable: 0 success, 1 error, 2 usage,
 3 Word unavailable, 4 partial restore, 5 session not found or ambiguous,
 6 Word not responding.
@@ -15,6 +16,8 @@ import dataclasses
 import json
 import logging
 import sys
+import threading
+import webbrowser
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -37,6 +40,10 @@ EXIT_NOT_FOUND = 5
 EXIT_NOT_RESPONDING = 6
 
 _log = logging.getLogger(__name__)
+
+# Set this event to make a running ``serve`` command shut down (tests use it;
+# Ctrl+C does the same for a person).
+serve_stop = threading.Event()
 
 
 @dataclass
@@ -181,6 +188,13 @@ def _build_parser() -> argparse.ArgumentParser:
     legacy.add_argument("dirs", nargs="*", metavar="DIR", help="default: the old tools' folders")
 
     commands.add_parser("doctor", help="explain why Word cannot be reached")
+
+    serve = commands.add_parser("serve", help="run the browser manager without the tray")
+    serve.add_argument("--port", type=int, default=0, help="TCP port (default: a free one)")
+    serve.add_argument("--open", action="store_true", help="open the manager in the browser")
+    serve.add_argument(
+        "--no-import", action="store_true", help="do not import the old tools' sessions"
+    )
     return parser
 
 
@@ -202,7 +216,7 @@ def _run(
     service = factory(args)
     try:
         # Bring old sessions in once, before any command that reads the store.
-        if args.command not in ("doctor", "import-legacy"):
+        if args.command not in ("doctor", "import-legacy", "serve"):
             _announce_first_run_import(args, service)
         handlers: dict[str, Callable[[argparse.Namespace, SessionService], _Outcome]] = {
             "save": _cmd_save,
@@ -220,6 +234,7 @@ def _run(
             "diff": _cmd_diff,
             "import-legacy": _cmd_import_legacy,
             "doctor": _cmd_doctor,
+            "serve": _cmd_serve,
         }
         return handlers[args.command](args, service)
     finally:
@@ -493,3 +508,38 @@ def _cmd_doctor(args: argparse.Namespace, service: SessionService) -> _Outcome:
         data=[dataclasses.asdict(c) for c in checks],
         lines=lines,
     )
+
+
+def _cmd_serve(args: argparse.Namespace, service: SessionService) -> _Outcome:
+    """Serve the API and web UI until Ctrl+C (or ``serve_stop``) and exit 0."""
+    # Imported here so other commands never load the web stack.
+    from word_session.web.server import start_server
+
+    # Bring old sessions in once, unless the user opted out.
+    if not args.no_import:
+        _announce_first_run_import(args, service)
+
+    # Reset the stop flag before the server exists, so a stop request made as
+    # soon as the server is reachable can never be lost.
+    serve_stop.clear()
+
+    # Start the server and mint the one-time link that signs a browser in.
+    handle = start_server(service, port=args.port)
+    url = f"{handle.url}/login?code={handle.auth.mint_login_code()}"
+
+    # Human messages go to stderr under --json so stdout stays one document.
+    out = sys.stderr if args.json else sys.stdout
+    print(f"Word Session manager: {url}", file=out)
+    print("Press Ctrl+C to stop", file=out, flush=True)
+    if args.open:
+        webbrowser.open(url)
+
+    # Wait in short slices: a blocking wait would not see Ctrl+C on Windows.
+    try:
+        while not serve_stop.wait(0.25):
+            pass
+    except KeyboardInterrupt:
+        pass
+    finally:
+        handle.stop()
+    return _Outcome(data={"url": handle.url, "stopped": True})

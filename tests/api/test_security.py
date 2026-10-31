@@ -59,7 +59,7 @@ def test_health_needs_no_login(anon_client: TestClient) -> None:
 def test_static_files_need_no_login(anon_client: TestClient) -> None:
     response = anon_client.get("/")
     assert response.status_code == 200
-    assert "job 16" in response.text
+    assert "<title>Word Session</title>" in response.text
 
 
 def test_login_sets_strict_httponly_cookie(app: FastAPI, auth: Auth) -> None:
