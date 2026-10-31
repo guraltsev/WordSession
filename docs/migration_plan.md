@@ -31,6 +31,8 @@ Status: proposal, 2026-10-31.
 | `_docs/` | `python_rules.md`, `docstring_schema.md`, empty `development_guide.md` | `AGENTS.md` points to `docs/…` and to a `docs/tests.md` that does not exist |
 | git | Repo initialised, **no commits**, branch `master` (main branch is meant to be `main`) | Nothing is under version control yet |
 
+Reorganised in job 01: see `legacy/`.
+
 ### 1.2 Defects and risks found
 
 Functional bugs

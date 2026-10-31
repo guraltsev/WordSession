@@ -286,3 +286,14 @@ _region_*
 ##############################
 # Project ignores
 ##############################
+
+# Local environments and build output
+venv/
+build/
+dist/
+
+# Test and coverage output
+.coverage
+htmlcov/
+playwright-report/
+test-results/

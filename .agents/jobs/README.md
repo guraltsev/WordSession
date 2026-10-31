@@ -1,6 +1,6 @@
 # Jobs
 
-This folder breaks `docs/migration_plan.md` (before job 01: `_docs/migration_plan.md`)
+This folder breaks `docs/migration_plan.md`
 into small, ordered jobs that a coding agent can execute one at a time.
 
 - `COORDINATOR.md` — instructions for the agent (or human) that dispatches

@@ -7,7 +7,7 @@ the run and waits for the human.
 | Job | Title | Depends on | Real Word | State | Attempts | Commit | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 00 | Git baseline | — | | done | 1 | 9841936 (tag legacy-baseline) | |
-| 01 | Repository reorganisation | 00 | | in-progress | 1 | | |
+| 01 | Repository reorganisation | 00 | | done | 1 | HASH | |
 | 02 | Project skeleton | 01 | | todo | 0 | | |
 | 03 | CI workflow | 02 | | todo | 0 | | |
 | 04 | Data model | 02 | | todo | 0 | | |
