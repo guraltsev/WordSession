@@ -17,7 +17,7 @@ the run and waits for the human.
 | 08 | Word backend protocol and fake | 04 | | done | 1 | 186fec8 | |
 | 09 | COM backend | 08 | isolated + shared | in-progress | 1 | | |
 | 10 | COM worker | 08 | | done | 1 | 88ba64e | |
-| 11 | Session service | 05, 06, 07, 10 | | todo | 0 | | |
+| 11 | Session service | 05, 06, 07, 10 | | done | 1 | 1bc55ed | |
 | 12 | CLI core commands | 11 | | todo | 0 | | |
 | 13 | CLI management commands | 12 | | todo | 0 | | |
 | 14 | End-to-end CLI tests against real Word | 09, 13 | isolated + shared | todo | 0 | | |
