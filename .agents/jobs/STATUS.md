@@ -26,7 +26,7 @@ the run and waits for the human.
 | 17 | UI smoke tests (Playwright) | 16 | | done | 1 | 48be651 | |
 | 18 | Tray app, single instance, `open`, autostart | 16 | | done | 1 | ec11781 | |
 | 19 | Autosave | 18 | | done | 1 | 1d87e2a | |
-| 20 | Packaging (PyInstaller) and `.cmd` shims | 19 | | todo | 0 | | |
+| 20 | Packaging (PyInstaller) and `.cmd` shims | 19 | | done | 1 | 4039add | |
 | 21 | Installer, user docs, release prep | 20 | | todo | 0 | | |
 | 23 | Human handoff | 21 | | todo | 0 | | final step of the run |
 | 22 | Decommission legacy | 23 + human request | | todo | 0 | | outside the run |
