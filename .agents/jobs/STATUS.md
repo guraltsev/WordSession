@@ -8,7 +8,7 @@ the run and waits for the human.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 00 | Git baseline | — | | done | 1 | 9841936 (tag legacy-baseline) | |
 | 01 | Repository reorganisation | 00 | | done | 1 | 58a859a | |
-| 02 | Project skeleton | 01 | | done | 1 | HASH | |
+| 02 | Project skeleton | 01 | | done | 1 | eb83c1c | |
 | 03 | CI workflow | 02 | | todo | 0 | | |
 | 04 | Data model | 02 | | todo | 0 | | |
 | 05 | Session store | 04 | | todo | 0 | | |
