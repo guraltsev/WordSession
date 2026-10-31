@@ -5,7 +5,8 @@ script. The everyday commands are ``save``, ``restore`` (alias ``load``),
 ``current``, ``list`` and ``show``; the management commands are ``rename``,
 ``delete``, ``pin``, ``unpin``, ``notes``, ``prune``, ``diff``,
 ``import-legacy`` and ``doctor``; ``serve`` runs the browser manager without
-the tray. Add ``--json`` for one machine-readable
+the tray, ``app`` runs the tray application and ``open`` opens the manager in
+the browser (starting the application when needed). Add ``--json`` for one machine-readable
 JSON document on stdout. Exit codes are stable: 0 success, 1 error, 2 usage,
 3 Word unavailable, 4 partial restore, 5 session not found or ambiguous,
 6 Word not responding.
@@ -15,6 +16,7 @@ import argparse
 import dataclasses
 import json
 import logging
+import subprocess
 import sys
 import threading
 import webbrowser
@@ -115,7 +117,7 @@ def main(
 
 def app_main() -> None:
     """Start the application launcher and exit with its status code."""
-    raise SystemExit(main(["app"]))
+    raise SystemExit(main(["app", "--open"]))
 
 
 # ---- parser ---------------------------------------------------------------
@@ -195,6 +197,10 @@ def _build_parser() -> argparse.ArgumentParser:
     serve.add_argument(
         "--no-import", action="store_true", help="do not import the old tools' sessions"
     )
+
+    app = commands.add_parser("app", help="run the tray application")
+    app.add_argument("--open", action="store_true", help="open the manager once started")
+    commands.add_parser("open", help="open the manager in the browser")
     return parser
 
 
@@ -212,11 +218,17 @@ def _run(
     )
     configure_logging(app_paths().log_dir, console_level=console_level)
 
+    # The tray application and ``open`` manage their own service (or need none).
+    if args.command == "app":
+        return _cmd_app(args)
+    if args.command == "open":
+        return _cmd_open(args)
+
     factory = service_factory if service_factory is not None else _default_service
     service = factory(args)
     try:
         # Bring old sessions in once, before any command that reads the store.
-        if args.command not in ("doctor", "import-legacy", "serve"):
+        if args.command not in ("doctor", "import-legacy", "serve", "app", "open"):
             _announce_first_run_import(args, service)
         handlers: dict[str, Callable[[argparse.Namespace, SessionService], _Outcome]] = {
             "save": _cmd_save,
@@ -543,3 +555,42 @@ def _cmd_serve(args: argparse.Namespace, service: SessionService) -> _Outcome:
     finally:
         handle.stop()
     return _Outcome(data={"url": handle.url, "stopped": True})
+
+
+def _cmd_app(args: argparse.Namespace) -> _Outcome:
+    """Run the tray application until the user quits."""
+    # Imported here so other commands never load the tray stack.
+    from word_session.app import App
+
+    code = App(fake=args.demo, open_browser=args.open).run()
+    return _Outcome(code=code, data={"exit": code})
+
+
+def _cmd_open(args: argparse.Namespace) -> _Outcome:
+    """Open the manager in the browser, starting the application if needed."""
+    from word_session import autostart
+    from word_session.instance import read_instance, request_login_url
+
+    # Prefer the running instance: it mints a login code for a new tab.
+    info = read_instance(app_paths().instance_file)
+    if info is not None:
+        try:
+            url = request_login_url(info)
+        except ConnectionError:
+            _log.debug("recorded instance does not answer", exc_info=True)
+        else:
+            webbrowser.open(url)
+            return _Outcome(data={"url": url, "started": False}, lines=[url])
+
+    # Nobody answered: start the application detached; it opens the manager.
+    if args.demo:
+        command = f'"{sys.executable}" -m word_session --demo app --open'
+    else:
+        command = f"{autostart.app_command()} --open"
+    flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(
+        subprocess, "CREATE_NEW_PROCESS_GROUP", 0
+    )
+    subprocess.Popen(command, creationflags=flags, close_fds=True)
+    return _Outcome(
+        data={"url": None, "started": True}, lines=["Starting Word Session; the manager will open"]
+    )

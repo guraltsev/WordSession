@@ -28,3 +28,13 @@
 
 ## Housekeeping
 - Two stray `word-session.exe --demo serve --no-import` processes (PIDs 17456, 68768 at the time) were left by the job 16 executor; the sandbox denied killing them. Stop them with Task Manager or `Stop-Process` if still running (demo backend, temp data dir, localhost only).
+
+## Job 18
+1. `uv run word-session --demo app --open`. Expected: a tray icon (white page with a blue bookmark) appears and the browser opens the manager signed in.
+2. In another terminal run `uv run word-session --demo open`. Expected: a new tab opens signed in, the old tab keeps working, and no second tray icon appears.
+3. Tray menu: double-click the icon (opens a tab). Check "Save session now" (balloon "Saved 3 documents"), "Recent sessions" (newest first, pinned first, click restores), and the "Autosave" and "Start at login" checkmarks (the second creates or removes the `WordSession` value under `HKCU\...\Run`). Check "Open sessions folder" and "Open log".
+4. Choose "Quit". Expected: the icon disappears and `instance.json` is removed from the state folder.
+5. Launch the app a second time with the first running, with the Start menu or `word-session-app`. Expected: the existing instance opens a tab and the second process exits silently.
+6. Kill the app from Task Manager, then run `word-session open`. Expected: a stale instance file is ignored and the app starts and opens the manager.
+7. Check that the three icon colours (blue, amber, red) look acceptable.
+

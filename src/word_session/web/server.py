@@ -7,6 +7,7 @@ the returned ``ServerHandle`` to mint login codes and to stop the server.
 import socket
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 import uvicorn
@@ -50,7 +51,12 @@ class ServerHandle:
         self._sock.close()
 
 
-def start_server(service: SessionService, *, port: int = 0) -> ServerHandle:
+def start_server(
+    service: SessionService,
+    *,
+    port: int = 0,
+    on_shutdown: Callable[[], None] | None = None,
+) -> ServerHandle:
     """Start the HTTP API on 127.0.0.1 in a daemon thread.
 
     Parameters
@@ -59,6 +65,8 @@ def start_server(service: SessionService, *, port: int = 0) -> ServerHandle:
         Service the API exposes.
     port : int
         Port to bind; 0 picks a free one.
+    on_shutdown : Callable[[], None] | None
+        Enables ``POST /api/internal/shutdown`` and is called by it.
 
     Returns
     -------
@@ -77,7 +85,7 @@ def start_server(service: SessionService, *, port: int = 0) -> ServerHandle:
 
     # Build the app and the uvicorn server around that socket.
     auth = Auth()
-    app = create_app(service, auth, port=real_port)
+    app = create_app(service, auth, port=real_port, on_shutdown=on_shutdown)
     config = uvicorn.Config(app, log_config=None, access_log=False, timeout_graceful_shutdown=2)
     server = uvicorn.Server(config)
     thread = threading.Thread(

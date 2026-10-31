@@ -150,6 +150,7 @@ def create_app(
     *,
     port: int,
     job_manager: JobManager | None = None,
+    on_shutdown: Callable[[], None] | None = None,
 ) -> FastAPI:
     """Build the FastAPI application for one service.
 
@@ -164,6 +165,9 @@ def create_app(
         (``ws_session_<port>``) depend on it.
     job_manager : JobManager | None
         Restore job runner; a new one is created when omitted.
+    on_shutdown : Callable[[], None] | None
+        Called by ``POST /api/internal/shutdown``; the route answers 404 when
+        this is ``None``.
 
     Returns
     -------
@@ -213,6 +217,14 @@ def create_app(
         """Mint a login code and the URL that redeems it."""
         code = auth.mint_login_code()
         return {"code": code, "url": f"http://127.0.0.1:{port}/login?code={code}"}
+
+    @app.post("/api/internal/shutdown")
+    def shutdown() -> dict[str, bool]:
+        """Ask the application to quit (instance-secret protected)."""
+        if on_shutdown is None:
+            raise StarletteHTTPException(404, "not found")
+        on_shutdown()
+        return {"ok": True}
 
     # ---- Word ----
 
