@@ -19,7 +19,7 @@ from datetime import datetime
 from pathlib import Path
 
 from word_session import legacy
-from word_session.config import Settings, app_paths, load_settings, resolve_sessions_dir
+from word_session.config import AppPaths, Settings, app_paths, load_settings, resolve_sessions_dir
 from word_session.events import EventBus
 from word_session.legacy import ImportSummary
 from word_session.model import (
@@ -596,6 +596,40 @@ def open_service(*, settings: Settings | None = None, fake: bool = False) -> Ses
     worker = ComWorker(factory, call_timeout=settings.restore.open_timeout_s)
     worker.start()
     return SessionService(store, worker, settings, path_exists=path_exists)
+
+
+def first_run_import(service: SessionService, paths: AppPaths) -> ImportSummary | None:
+    """Import the old tools' sessions once, remembering that it was done.
+
+    Parameters
+    ----------
+    service : SessionService
+        Service whose store receives the imported sessions.
+    paths : AppPaths
+        Application paths; the marker file lives in ``paths.data_dir``.
+
+    Returns
+    -------
+    ImportSummary | None
+        ``None`` when the ``.legacy-imported`` marker already exists,
+        otherwise the summary of the import. The marker is written even when
+        individual files failed to import.
+    """
+    # A present marker means the import already ran; do nothing.
+    marker = paths.data_dir / ".legacy-imported"
+    if marker.exists():
+        return None
+
+    # Run the import, then record when it happened and what it found.
+    summary = service.import_legacy()
+    text = (
+        f"{datetime.now().astimezone().isoformat()}\n"
+        f"imported={len(summary.imported)} skipped={len(summary.skipped)} "
+        f"errors={len(summary.errors)}\n"
+    )
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(text, encoding="utf-8")
+    return summary
 
 
 def _always_exists(path: str) -> bool:

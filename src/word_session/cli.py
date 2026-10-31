@@ -2,13 +2,16 @@
 
 Call ``main(argv)`` to run a command and ``app_main()`` for the console
 script. The everyday commands are ``save``, ``restore`` (alias ``load``),
-``current``, ``list`` and ``show``. Add ``--json`` for one machine-readable
+``current``, ``list`` and ``show``; the management commands are ``rename``,
+``delete``, ``pin``, ``unpin``, ``notes``, ``prune``, ``diff``,
+``import-legacy`` and ``doctor``. Add ``--json`` for one machine-readable
 JSON document on stdout. Exit codes are stable: 0 success, 1 error, 2 usage,
 3 Word unavailable, 4 partial restore, 5 session not found or ambiguous,
 6 Word not responding.
 """
 
 import argparse
+import dataclasses
 import json
 import logging
 import sys
@@ -18,9 +21,10 @@ from pathlib import Path
 
 from word_session import __version__
 from word_session.config import ConfigError, app_paths, load_settings
+from word_session.doctor import run_checks
 from word_session.logging_setup import configure_logging
 from word_session.model import DocumentState, RestoreReport, Session
-from word_session.service import ServiceError, SessionService, open_service
+from word_session.service import ServiceError, SessionService, first_run_import, open_service
 from word_session.store import AmbiguousSelector, SessionNotFound, StoreError
 from word_session.word.backend import WordError, WordNotResponding, WordUnavailable
 
@@ -111,7 +115,7 @@ def app_main() -> None:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    """Build the argument parser with global options and the five commands."""
+    """Build the argument parser with global options and all commands."""
     parser = argparse.ArgumentParser(
         prog="word-session", description="Save and restore Word sessions."
     )
@@ -148,6 +152,35 @@ def _build_parser() -> argparse.ArgumentParser:
 
     show = commands.add_parser("show", help="show one session")
     show.add_argument("selector")
+
+    # Management commands.
+    rename = commands.add_parser("rename", help="rename a session")
+    rename.add_argument("selector")
+    rename.add_argument("new_name")
+
+    delete = commands.add_parser("delete", help="move a session to the trash")
+    delete.add_argument("selector")
+    delete.add_argument("--purge", action="store_true", help="delete permanently")
+    delete.add_argument("--yes", action="store_true", help="do not ask for confirmation")
+
+    for name, help_text in (("pin", "protect a session from pruning"), ("unpin", "undo pin")):
+        commands.add_parser(name, help=help_text).add_argument("selector")
+
+    notes = commands.add_parser("notes", help="set the notes of a session")
+    notes.add_argument("selector")
+    notes.add_argument("text")
+
+    prune = commands.add_parser("prune", help="trash old automatic sessions")
+    prune.add_argument("--keep", type=int, help="automatic sessions to keep (default: settings)")
+
+    diff = commands.add_parser("diff", help="compare the documents of two sessions")
+    diff.add_argument("selector_a")
+    diff.add_argument("selector_b")
+
+    legacy = commands.add_parser("import-legacy", help="import sessions of the old tools")
+    legacy.add_argument("dirs", nargs="*", metavar="DIR", help="default: the old tools' folders")
+
+    commands.add_parser("doctor", help="explain why Word cannot be reached")
     return parser
 
 
@@ -168,6 +201,9 @@ def _run(
     factory = service_factory if service_factory is not None else _default_service
     service = factory(args)
     try:
+        # Bring old sessions in once, before any command that reads the store.
+        if args.command not in ("doctor", "import-legacy"):
+            _announce_first_run_import(args, service)
         handlers: dict[str, Callable[[argparse.Namespace, SessionService], _Outcome]] = {
             "save": _cmd_save,
             "restore": _cmd_restore,
@@ -175,6 +211,15 @@ def _run(
             "current": _cmd_current,
             "list": _cmd_list,
             "show": _cmd_show,
+            "rename": _cmd_update,
+            "pin": _cmd_update,
+            "unpin": _cmd_update,
+            "notes": _cmd_update,
+            "delete": _cmd_delete,
+            "prune": _cmd_prune,
+            "diff": _cmd_diff,
+            "import-legacy": _cmd_import_legacy,
+            "doctor": _cmd_doctor,
         }
         return handlers[args.command](args, service)
     finally:
@@ -188,6 +233,21 @@ def _default_service(args: argparse.Namespace) -> SessionService:
     if args.sessions_dir:
         settings = settings.model_copy(update={"sessions_dir": Path(args.sessions_dir)})
     return open_service(settings=settings, fake=args.demo)
+
+
+def _announce_first_run_import(args: argparse.Namespace, service: SessionService) -> None:
+    """Run the one-time legacy import and tell the user when it found sessions."""
+    # A broken legacy folder must never stop the command the user asked for.
+    try:
+        summary = first_run_import(service, app_paths())
+    except Exception as exc:
+        _log.warning("first-run import failed: %s", exc, exc_info=exc)
+        return
+    if summary is not None and summary.imported and not args.quiet:
+        print(
+            f"Imported {len(summary.imported)} sessions from the old word-session tools.",
+            file=sys.stderr,
+        )
 
 
 def _failure(args: argparse.Namespace, exc: Exception) -> _Outcome:
@@ -299,10 +359,7 @@ def _document_line(doc: DocumentState) -> str:
 def _cmd_list(args: argparse.Namespace, service: SessionService) -> _Outcome:
     """List stored sessions, newest first."""
     sessions = service.list_sessions(kind=args.kind)[: max(args.limit, 0)]
-    lines = [
-        f"{s.id}  {s.kind:<8} {len(s.documents):>3}  {s.name}" + ("  [pinned]" if s.pinned else "")
-        for s in sessions
-    ]
+    lines = [_session_line(s) for s in sessions]
     return _Outcome(data=[s.model_dump(mode="json") for s in sessions], lines=lines)
 
 
@@ -333,3 +390,106 @@ def _show_lines(session: Session, *, demo: bool) -> list[str]:
             flag = "  exists" if demo or Path(doc.path).exists() else "  MISSING"
         lines.append(f"  {_document_line(doc)}  [{doc.location}]{flag}")
     return lines
+
+
+# ---- management commands --------------------------------------------------
+
+
+def _session_line(session: Session) -> str:
+    """Format a session as one line for ``list`` and the update commands."""
+    pinned = "  [pinned]" if session.pinned else ""
+    return f"{session.id}  {session.kind:<8} {len(session.documents):>3}  {session.name}{pinned}"
+
+
+def _cmd_update(args: argparse.Namespace, service: SessionService) -> _Outcome:
+    """Apply rename, pin, unpin or notes through ``service.update``."""
+    # Each command changes exactly one field.
+    if args.command == "rename":
+        session = service.update(args.selector, name=args.new_name)
+    elif args.command == "notes":
+        session = service.update(args.selector, notes=args.text)
+    else:
+        session = service.update(args.selector, pinned=args.command == "pin")
+    return _Outcome(data=session.model_dump(mode="json"), lines=[_session_line(session)])
+
+
+def _cmd_delete(args: argparse.Namespace, service: SessionService) -> _Outcome:
+    """Delete a session after confirmation, to the trash unless ``--purge``."""
+    session = service.get(args.selector)
+
+    # Ask on a terminal; scripts must opt in with --yes.
+    if not args.yes:
+        if not sys.stdin.isatty():
+            message = "refusing to delete without confirmation; use --yes"
+            return _Outcome(
+                code=EXIT_USAGE,
+                data={"error": {"type": "UsageError", "message": message}},
+                warnings=[f"error: {message}"],
+            )
+        answer = input(f'Delete "{session.name}" ({session.id})? [y/N] ')
+        if answer.strip().lower() not in ("y", "yes"):
+            return _Outcome(
+                code=EXIT_ERROR,
+                data={"deleted": None, "cancelled": True},
+                warnings=["cancelled"],
+            )
+
+    # Delete, then say where the file went.
+    service.delete(session.id, purge=args.purge)
+    trash = None if args.purge else service.store.trash_dir / f"{session.id}.json"
+    if trash is None:
+        line = f'Deleted "{session.name}" ({session.id}) permanently'
+    else:
+        line = f'Moved "{session.name}" ({session.id}) to the trash: {trash}'
+    data = {
+        "deleted": session.id,
+        "purged": args.purge,
+        "trash": str(trash) if trash is not None else None,
+    }
+    return _Outcome(data=data, lines=[line])
+
+
+def _cmd_prune(args: argparse.Namespace, service: SessionService) -> _Outcome:
+    """Trash old automatic sessions and list the removed ids."""
+    removed = service.prune(args.keep)
+    return _Outcome(data={"removed": removed}, lines=removed or ["nothing to prune"])
+
+
+def _cmd_diff(args: argparse.Namespace, service: SessionService) -> _Outcome:
+    """Show the document paths added and removed between two sessions."""
+    result = service.diff(args.selector_a, args.selector_b)
+    lines = [f"+ {p}" for p in result.added] + [f"- {p}" for p in result.removed]
+    return _Outcome(data=dataclasses.asdict(result), lines=lines)
+
+
+def _cmd_import_legacy(args: argparse.Namespace, service: SessionService) -> _Outcome:
+    """Import sessions from the old tools and report counts and errors."""
+    dirs = [Path(d) for d in args.dirs] if args.dirs else None
+    summary = service.import_legacy(dirs)
+    data = {
+        "imported": summary.imported,
+        "skipped": [str(p) for p in summary.skipped],
+        "errors": [{"path": str(p), "message": m} for p, m in summary.errors],
+    }
+    line = (
+        f"Imported {len(summary.imported)} sessions, skipped {len(summary.skipped)}, "
+        f"{len(summary.errors)} errors"
+    )
+    return _Outcome(
+        data=data,
+        lines=[line],
+        warnings=[f"error: {p}: {m}" for p, m in summary.errors],
+    )
+
+
+def _cmd_doctor(args: argparse.Namespace, service: SessionService) -> _Outcome:
+    """Run the diagnostics; exit 1 when any check fails."""
+    checks = run_checks(service, app_paths())
+    labels = {"ok": "ok", "warn": "warn", "fail": "FAIL"}
+    lines = [f"{labels[c.status]:<4} {c.name:<15} {c.detail}" for c in checks]
+    failed = any(c.status == "fail" for c in checks)
+    return _Outcome(
+        code=EXIT_ERROR if failed else EXIT_OK,
+        data=[dataclasses.asdict(c) for c in checks],
+        lines=lines,
+    )
