@@ -12,7 +12,7 @@ the run and waits for the human.
 | 03 | CI workflow | 02 | | done | 1 | 6f25d75 | not yet run remotely (no GitHub remote) |
 | 04 | Data model | 02 | | done | 1 | e479f92 | |
 | 05 | Session store | 04 | | done | 1 | c6b122a | |
-| 06 | Legacy readers and import | 05 | | in-progress | 1 | | |
+| 06 | Legacy readers and import | 05 | | done | 1 | f6c0afe | |
 | 07 | Config, paths, logging | 02 | | done | 1 | d5db01f | |
 | 08 | Word backend protocol and fake | 04 | | done | 1 | 186fec8 | |
 | 09 | COM backend | 08 | isolated + shared | in-progress | 1 | | |
