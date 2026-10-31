@@ -15,14 +15,14 @@ the run and waits for the human.
 | 06 | Legacy readers and import | 05 | | done | 1 | f6c0afe | |
 | 07 | Config, paths, logging | 02 | | done | 1 | d5db01f | |
 | 08 | Word backend protocol and fake | 04 | | done | 1 | 186fec8 | |
-| 09 | COM backend | 08 | isolated + shared | in-progress | 1 | | |
+| 09 | COM backend | 08 | isolated + shared | done | 1 | c73bf70 | |
 | 10 | COM worker | 08 | | done | 1 | 88ba64e | |
 | 11 | Session service | 05, 06, 07, 10 | | done | 1 | 1bc55ed | |
 | 12 | CLI core commands | 11 | | done | 1 | 6aa3a4f | |
 | 13 | CLI management commands | 12 | | done | 1 | 9512545 | |
 | 14 | End-to-end CLI tests against real Word | 09, 13 | isolated + shared | todo | 0 | | |
 | 15 | HTTP API | 11 | | done | 1 | d05e209 | |
-| 16 | Web UI and `serve` | 15, 13 | | todo | 0 | | |
+| 16 | Web UI and `serve` | 15, 13 | | in-progress | 1 | | |
 | 17 | UI smoke tests (Playwright) | 16 | | todo | 0 | | |
 | 18 | Tray app, single instance, `open`, autostart | 16 | | todo | 0 | | |
 | 19 | Autosave | 18 | | todo | 0 | | |
