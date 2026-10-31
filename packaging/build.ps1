@@ -1,6 +1,7 @@
 # Build the Windows bundle: dist\WordSession and dist\WordSession-<version>-win64.zip.
 # -NoSync skips 'uv sync' (use when the environment is already synced or an exe is locked).
-param([switch]$NoSync)
+# -Installer also builds dist\WordSession-<version>-setup.exe with Inno Setup (skipped when iscc.exe is missing).
+param([switch]$NoSync, [switch]$Installer)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
@@ -35,3 +36,24 @@ for ($attempt = 1; $attempt -le 5; $attempt++) {
     }
 }
 Write-Host "Built $zip"
+
+# Optional: compile the per-user installer when Inno Setup is available.
+if ($Installer) {
+    $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
+    if (-not $iscc) {
+        $candidates = @(
+            "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+        )
+        $iscc = $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+    }
+    if ($iscc) {
+        Invoke-Checked { & $iscc "/DAppVersion=$version" (Join-Path $root 'packaging\installer.iss') }
+        Write-Host "Built $(Join-Path $root "dist\WordSession-$version-setup.exe")"
+    }
+    else {
+        Write-Host 'Skipped the installer: iscc.exe (Inno Setup 6) was not found.'
+        Write-Host 'Install it with: winget install JRSoftware.InnoSetup  (or from https://jrsoftware.org/isinfo.php), then run build.ps1 -Installer again.'
+    }
+}

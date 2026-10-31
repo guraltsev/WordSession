@@ -50,3 +50,23 @@
 4. Run `word-session-LoadSession.cmd` with no argument and with a session file path. Expected: latest / that session restored.
 5. Check exe icon and Properties > Details (version 0.1.0) in Explorer.
 
+
+## Job 14
+1. Open File > Options in Word (modal dialog), run `word-session current --json`. Expected: exit 6 within the timeout.
+2. Close Word, run `word-session restore --no-start`. Expected: exit 3, and Word does not start.
+3. With a temporary `WORD_SESSION_HOME`, run `word-session import-legacy` against the real `~/.word-session*` folders. Expected: sessions imported, originals untouched.
+4. Run `python scripts/make_test_docs.py` and open the folder it prints. Expected: four documents of about 10 pages.
+
+
+## Job 21
+1. Install Inno Setup 6 (`winget install JRSoftware.InnoSetup`), run `powershell -File packaging\build.ps1 -Installer`. Expected: `dist\WordSession-1.0.0-setup.exe`, no compile errors/warnings in `installer.iss`.
+2. Silent install: `setup.exe /VERYSILENT /SUPPRESSMSGBOXES /CURRENTUSER /DIR=<tmp> /TASKS=""`; expected: files in `<tmp>`, `<tmp>\word-session.exe --version` prints `word-session 1.0.0`, no Run value created.
+3. Start `word-session-app.exe` with `WORD_SESSION_HOME=<tmp2>` and `--demo`, run the installer again over it; expected: the app is stopped (`quit-app`) and files are replaced.
+4. Silent uninstall `<tmp>\unins000.exe /VERYSILENT`; expected: folder gone, `<tmp2>` untouched.
+5. Interactive install: Start menu entry "Word Session" launches the tray app and opens the manager; with the start-at-login task ticked, `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\WordSession` holds the quoted exe path and the app starts after sign-in; unticked, no value.
+6. Interactive uninstall: final page text says sessions and settings were kept and names both folders; Run value removed; the running tray app is stopped first.
+7. Read `docs/user_guide.md` for accuracy against the real UI.
+
+
+## Housekeeping (Word)
+- Nine hidden isolated `WINWORD.EXE /Automation -Embedding` processes left by job 14 debug runs (PIDs 70684, 15024, 62392, 61516, 73048, 71828, 73376, 74820, 75576) could not be killed (sandbox denied). End them in Task Manager; keep your own Word (PID 60884 at the time).

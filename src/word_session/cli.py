@@ -5,8 +5,9 @@ script. The everyday commands are ``save``, ``restore`` (alias ``load``),
 ``current``, ``list`` and ``show``; the management commands are ``rename``,
 ``delete``, ``pin``, ``unpin``, ``notes``, ``prune``, ``diff``,
 ``import-legacy`` and ``doctor``; ``serve`` runs the browser manager without
-the tray, ``app`` runs the tray application and ``open`` opens the manager in
-the browser (starting the application when needed). Add ``--json`` for one machine-readable
+the tray, ``app`` runs the tray application, ``open`` opens the manager in
+the browser (starting the application when needed) and ``quit-app`` stops the
+running application. Add ``--json`` for one machine-readable
 JSON document on stdout. Exit codes are stable: 0 success, 1 error, 2 usage,
 3 Word unavailable, 4 partial restore, 5 session not found or ambiguous,
 6 Word not responding.
@@ -19,6 +20,8 @@ import logging
 import subprocess
 import sys
 import threading
+import time
+import urllib.request
 import webbrowser
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -27,6 +30,7 @@ from pathlib import Path
 from word_session import __version__
 from word_session.config import ConfigError, app_paths, load_settings
 from word_session.doctor import run_checks
+from word_session.instance import read_instance
 from word_session.logging_setup import configure_logging
 from word_session.model import DocumentState, RestoreReport, Session
 from word_session.service import ServiceError, SessionService, first_run_import, open_service
@@ -201,6 +205,9 @@ def _build_parser() -> argparse.ArgumentParser:
     app = commands.add_parser("app", help="run the tray application")
     app.add_argument("--open", action="store_true", help="open the manager once started")
     commands.add_parser("open", help="open the manager in the browser")
+    commands.add_parser(
+        "quit-app", help="stop the running tray application (used by the installer)"
+    )
     return parser
 
 
@@ -223,6 +230,8 @@ def _run(
         return _cmd_app(args)
     if args.command == "open":
         return _cmd_open(args)
+    if args.command == "quit-app":
+        return _cmd_quit_app()
 
     factory = service_factory if service_factory is not None else _default_service
     service = factory(args)
@@ -566,10 +575,44 @@ def _cmd_app(args: argparse.Namespace) -> _Outcome:
     return _Outcome(code=code, data={"exit": code})
 
 
+def _cmd_quit_app() -> _Outcome:
+    """Ask the running application to quit and wait until it has gone.
+
+    Exits 0 when nothing was running; exits 1 when the instance file is still
+    there after five seconds.
+    """
+    # No instance file means nothing to stop.
+    instance_file = app_paths().instance_file
+    info = read_instance(instance_file)
+    if info is None:
+        return _Outcome(data={"was_running": False}, lines=["Word Session is not running"])
+
+    # Ask the instance to shut down; a stale file (nobody answers) counts as stopped.
+    request = urllib.request.Request(
+        f"http://127.0.0.1:{info.port}/api/internal/shutdown",
+        data=b"",
+        method="POST",
+        headers={"X-Word-Session-Secret": info.secret},
+    )
+    try:
+        urllib.request.urlopen(request, timeout=3.0).close()
+    except OSError:
+        _log.debug("recorded instance does not answer", exc_info=True)
+        return _Outcome(data={"was_running": False}, lines=["Word Session is not running"])
+
+    # The application removes its instance file as it exits.
+    deadline = time.monotonic() + 5.0
+    while instance_file.exists() and time.monotonic() < deadline:
+        time.sleep(0.1)
+    if instance_file.exists():
+        raise ServiceError("Word Session did not stop within 5 seconds")
+    return _Outcome(data={"was_running": True}, lines=["Word Session stopped"])
+
+
 def _cmd_open(args: argparse.Namespace) -> _Outcome:
     """Open the manager in the browser, starting the application if needed."""
     from word_session import autostart
-    from word_session.instance import read_instance, request_login_url
+    from word_session.instance import request_login_url
 
     # Prefer the running instance: it mints a login code for a new tab.
     info = read_instance(app_paths().instance_file)
