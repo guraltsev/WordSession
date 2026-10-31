@@ -24,7 +24,7 @@ the run and waits for the human.
 | 15 | HTTP API | 11 | | done | 1 | d05e209 | |
 | 16 | Web UI and `serve` | 15, 13 | | done | 1 | 88e7057 | |
 | 17 | UI smoke tests (Playwright) | 16 | | todo | 0 | | |
-| 18 | Tray app, single instance, `open`, autostart | 16 | | todo | 0 | | |
+| 18 | Tray app, single instance, `open`, autostart | 16 | | done | 1 | ec11781 | |
 | 19 | Autosave | 18 | | todo | 0 | | |
 | 20 | Packaging (PyInstaller) and `.cmd` shims | 19 | | todo | 0 | | |
 | 21 | Installer, user docs, release prep | 20 | | todo | 0 | | |
