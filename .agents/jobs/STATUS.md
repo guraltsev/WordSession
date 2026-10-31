@@ -10,7 +10,7 @@ the run and waits for the human.
 | 01 | Repository reorganisation | 00 | | done | 1 | 58a859a | |
 | 02 | Project skeleton | 01 | | done | 1 | eb83c1c | |
 | 03 | CI workflow | 02 | | done | 1 | 6f25d75 | not yet run remotely (no GitHub remote) |
-| 04 | Data model | 02 | | done | 1 | HASH | |
+| 04 | Data model | 02 | | done | 1 | e479f92 | |
 | 05 | Session store | 04 | | todo | 0 | | |
 | 06 | Legacy readers and import | 05 | | todo | 0 | | |
 | 07 | Config, paths, logging | 02 | | todo | 0 | | |
