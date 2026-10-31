@@ -13,6 +13,7 @@ import webbrowser
 from types import ModuleType
 
 from word_session import __version__, autostart
+from word_session.autosave import Autosaver
 from word_session.config import app_paths, load_settings
 from word_session.instance import (
     InstanceInfo,
@@ -67,6 +68,7 @@ class App:
         self.autostart: ModuleType = autostart_module if autostart_module is not None else autostart
         self.handle: ServerHandle | None = None
         self._icon: object | None = None
+        self._autosaver: Autosaver | None = None
         self._quit_requested = threading.Event()
 
     def run(self) -> int:
@@ -97,7 +99,9 @@ class App:
                 _log.warning("first-run import failed", exc_info=True)
             from word_session.web.server import start_server
 
-            self.handle = start_server(service, on_shutdown=self.quit)
+            self.handle = start_server(
+                service, on_shutdown=self.quit, on_settings_changed=self.trigger_autosave
+            )
 
             # Publish how to reach this instance only once the server answers.
             write_instance(
@@ -111,6 +115,10 @@ class App:
             )
             self._apply_start_at_login(service)
 
+            # Autosave starts after the server and stops first on quit.
+            self._autosaver = Autosaver(service)
+            self._autosaver.start()
+
             # The tray owns the main thread until Quit (or the shutdown route).
             from word_session import tray
 
@@ -121,6 +129,9 @@ class App:
         finally:
             # Tear down in reverse order of startup.
             self._icon = None
+            if self._autosaver is not None:
+                self._autosaver.stop()
+                self._autosaver = None
             if self.handle is not None:
                 self.handle.stop()
             if service is not None:
@@ -140,6 +151,11 @@ class App:
             return
         url = f"{self.handle.url}/login?code={self.handle.auth.mint_login_code()}"
         webbrowser.open(url)
+
+    def trigger_autosave(self) -> None:
+        """Wake the autosaver so new autosave settings apply immediately."""
+        if self._autosaver is not None:
+            self._autosaver.trigger()
 
     def quit(self) -> None:
         """Ask ``run`` to return by stopping the tray icon."""

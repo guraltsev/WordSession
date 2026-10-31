@@ -38,3 +38,7 @@
 6. Kill the app from Task Manager, then run `word-session open`. Expected: a stale instance file is ignored and the app starts and opens the manager.
 7. Check that the three icon colours (blue, amber, red) look acceptable.
 
+
+## Job 19
+1. `word-session --demo app`, set interval 1 minute in Settings with a changing demo state: an `auto` session appears within about a minute.
+2. Untick "Autosave" in the tray: no new `auto` sessions appear.

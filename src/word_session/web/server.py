@@ -56,6 +56,7 @@ def start_server(
     *,
     port: int = 0,
     on_shutdown: Callable[[], None] | None = None,
+    on_settings_changed: Callable[[], None] | None = None,
 ) -> ServerHandle:
     """Start the HTTP API on 127.0.0.1 in a daemon thread.
 
@@ -67,6 +68,8 @@ def start_server(
         Port to bind; 0 picks a free one.
     on_shutdown : Callable[[], None] | None
         Enables ``POST /api/internal/shutdown`` and is called by it.
+    on_settings_changed : Callable[[], None] | None
+        Called after ``PUT /api/settings`` applied new settings.
 
     Returns
     -------
@@ -85,7 +88,13 @@ def start_server(
 
     # Build the app and the uvicorn server around that socket.
     auth = Auth()
-    app = create_app(service, auth, port=real_port, on_shutdown=on_shutdown)
+    app = create_app(
+        service,
+        auth,
+        port=real_port,
+        on_shutdown=on_shutdown,
+        on_settings_changed=on_settings_changed,
+    )
     config = uvicorn.Config(app, log_config=None, access_log=False, timeout_graceful_shutdown=2)
     server = uvicorn.Server(config)
     thread = threading.Thread(

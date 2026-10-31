@@ -127,6 +127,7 @@ def build_icon(app: "App", service: SessionService) -> Any:
         """Flip and persist ``settings.autosave.enabled``."""
         service.settings.autosave.enabled = not service.settings.autosave.enabled
         save_settings(service.settings)
+        app.trigger_autosave()
 
     def toggle_start_at_login() -> None:
         """Flip the setting and make the autostart registration match it."""

@@ -251,6 +251,10 @@ class FakeApp:
         self.autostart = FakeAutostart()
         self.opened = 0
         self.quit_called = 0
+        self.autosave_triggers = 0
+
+    def trigger_autosave(self) -> None:
+        self.autosave_triggers += 1
 
     def open_manager(self) -> None:
         self.opened += 1

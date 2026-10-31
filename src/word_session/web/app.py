@@ -151,6 +151,7 @@ def create_app(
     port: int,
     job_manager: JobManager | None = None,
     on_shutdown: Callable[[], None] | None = None,
+    on_settings_changed: Callable[[], None] | None = None,
 ) -> FastAPI:
     """Build the FastAPI application for one service.
 
@@ -168,6 +169,9 @@ def create_app(
     on_shutdown : Callable[[], None] | None
         Called by ``POST /api/internal/shutdown``; the route answers 404 when
         this is ``None``.
+    on_settings_changed : Callable[[], None] | None
+        Called after ``PUT /api/settings`` saved and applied new settings;
+        defaults to doing nothing.
 
     Returns
     -------
@@ -356,6 +360,8 @@ def create_app(
         """Validate, save and apply new settings."""
         save_settings(settings)
         service.settings = settings
+        if on_settings_changed is not None:
+            on_settings_changed()
         return settings
 
     @app.post("/api/import-legacy")
