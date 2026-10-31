@@ -57,7 +57,11 @@ Global elements: header with navigation and Word status dot; toast area.
 
 ## Behaviour
 
-- Open one `EventSource("/api/events")` per tab. On `session_saved`,
+- Open one SSE stream per tab with `fetch("/api/events", {headers:
+  {"X-Word-Session": "1"}, credentials: "same-origin"})` and parse
+  `response.body` as a text stream (`EventSource` cannot send the required
+  `X-Word-Session` header; job 15 enforces it on `/api/events`; reconnect
+  with backoff on error). On `session_saved`,
   `session_updated`, `session_deleted` refresh the affected view (debounce
   300 ms). Other tabs' changes therefore appear live.
 - Edits send `If-Match` with the revision from the last GET. On `412`:
@@ -65,7 +69,7 @@ Global elements: header with navigation and Word status dot; toast area.
   showing the latest version."
 - Any `401` → full-page message: "Not signed in. Open the manager from the
   tray icon or run `word-session open`." (no login form).
-- `EventSource` error or failed fetch (network error) → banner "Word
+- Event-stream error or failed fetch (network error) → banner "Word
   Session is not running — reopen it from the tray". Remove the banner if a
   later `/api/health` succeeds **and** an authenticated call succeeds; if
   that call returns 401 (app restarted) show the not-signed-in message.
