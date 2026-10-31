@@ -28,5 +28,5 @@ the run and waits for the human.
 | 19 | Autosave | 18 | | done | 1 | 1d87e2a | |
 | 20 | Packaging (PyInstaller) and `.cmd` shims | 19 | | done | 1 | 4039add | |
 | 21 | Installer, user docs, release prep | 20 | | done | 1 | 1b29095 | installer.iss uncompiled (no iscc) |
-| 23 | Human handoff | 21 | | todo | 0 | | final step of the run |
+| 23 | Human handoff | 21 | | done | 1 | 4e3dcf4 | final step of the run |
 | 22 | Decommission legacy | 23 + human request | | todo | 0 | | outside the run |
