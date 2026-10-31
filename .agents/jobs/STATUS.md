@@ -20,9 +20,9 @@ the run and waits for the human.
 | 11 | Session service | 05, 06, 07, 10 | | done | 1 | 1bc55ed | |
 | 12 | CLI core commands | 11 | | done | 1 | 6aa3a4f | |
 | 13 | CLI management commands | 12 | | done | 1 | 9512545 | |
-| 14 | End-to-end CLI tests against real Word | 09, 13 | isolated + shared | todo | 0 | | |
+| 14 | End-to-end CLI tests against real Word | 09, 13 | isolated + shared | in-progress | 1 | | |
 | 15 | HTTP API | 11 | | done | 1 | d05e209 | |
-| 16 | Web UI and `serve` | 15, 13 | | in-progress | 1 | | |
+| 16 | Web UI and `serve` | 15, 13 | | done | 1 | 88e7057 | |
 | 17 | UI smoke tests (Playwright) | 16 | | todo | 0 | | |
 | 18 | Tray app, single instance, `open`, autostart | 16 | | todo | 0 | | |
 | 19 | Autosave | 18 | | todo | 0 | | |
