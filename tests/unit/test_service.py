@@ -2,7 +2,6 @@
 
 import threading
 from datetime import UTC, datetime
-from pathlib import Path
 
 import pytest
 
@@ -390,11 +389,18 @@ def test_diff_ignores_case(service: SessionService) -> None:
     assert diff.removed == [B]
 
 
-def test_import_legacy_uses_given_dirs(service: SessionService, tmp_path: Path) -> None:
-    empty = tmp_path / "legacy"
-    empty.mkdir()
-    summary = service.import_legacy([empty])
-    assert summary.imported == [] and summary.errors == []
+def test_capture_only_given_paths(service: SessionService) -> None:
+    result = service.capture(paths=[A.upper()])
+    assert [d.path for d in result.session.documents] == [A]
+
+
+def test_close_documents_closes_saved_and_keeps_unsaved(
+    service: SessionService, fake_backend: FakeWordBackend
+) -> None:
+    fake_backend.documents[0].saved = False
+    results = service.close_documents([A, B, "C:\\Docs\nope.docx"])
+    assert [r.status for r in results] == ["unsaved", "closed", "not_open"]
+    assert [d.path for d in fake_backend.documents] == [A]
 
 
 # ---- autosave -----------------------------------------------------------------

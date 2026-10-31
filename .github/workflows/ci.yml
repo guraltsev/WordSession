@@ -20,9 +20,9 @@ jobs:
       - run: uv run pyright
       - run: uv run pytest --cov=word_session --cov-report=term-missing
       - name: Build the bundle
-        run: powershell -ExecutionPolicy Bypass -File packaging/build.ps1
+        run: powershell -ExecutionPolicy Bypass -File _scripts/build.ps1
       - name: Smoke-test the bundle
-        run: powershell -ExecutionPolicy Bypass -File packaging/smoke_test.ps1 -Dist dist\WordSession
+        run: powershell -ExecutionPolicy Bypass -File _scripts/smoke_test.ps1 -Dist dist\WordSession
       - uses: actions/upload-artifact@v4
         with:
           name: WordSession-win64

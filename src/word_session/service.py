@@ -2,7 +2,7 @@
 
 Build a ``SessionService`` (or call ``open_service()``) and use ``capture``,
 ``restore``, ``list_sessions``, ``update``, ``delete``, ``prune``,
-``import_legacy`` and ``autosave_tick``. Every Word call goes through a
+``autosave_tick``. Every Word call goes through a
 ``ComWorker``; progress and changes are announced on the service's
 ``EventBus``. Restoring is reported per document and never aborts halfway.
 """
@@ -18,11 +18,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from word_session import legacy
-from word_session.config import AppPaths, Settings, app_paths, load_settings, resolve_sessions_dir
+from word_session.config import Settings, app_paths, load_settings, resolve_sessions_dir
 from word_session.events import EventBus
-from word_session.legacy import ImportSummary
 from word_session.model import (
+    CloseResult,
     DocumentState,
     RestoreReport,
     RestoreResult,
@@ -34,6 +33,7 @@ from word_session.word.backend import (
     DocumentLocked,
     DocumentMissing,
     WordBackend,
+    WordBusy,
     WordError,
     WordInfo,
 )
@@ -168,9 +168,64 @@ class SessionService:
 
         return self._worker.call(work)
 
+    def close_documents(self, paths: list[str]) -> list[CloseResult]:
+        """Close open documents without saving; ones with unsaved changes stay open.
+
+        Parameters
+        ----------
+        paths : list[str]
+            Paths of the documents to close (case-insensitive).
+
+        Returns
+        -------
+        list[CloseResult]
+            One result per path, in the order given.
+
+        Raises
+        ------
+        WordUnavailable
+            If Word is not running (it is never started here).
+        """
+
+        def work(backend: WordBackend) -> list[CloseResult]:
+            backend.connect(start_if_needed=False)
+            open_docs = {d.path.casefold(): d for d in backend.list_documents()}
+            results: list[CloseResult] = []
+            for path in paths:
+                doc = open_docs.get(path.casefold())
+                if doc is None:
+                    results.append(CloseResult(path=path, status="not_open"))
+                elif doc.had_unsaved_changes:
+                    results.append(
+                        CloseResult(
+                            path=path,
+                            status="unsaved",
+                            message="has unsaved changes; save or close it in Word",
+                        )
+                    )
+                else:
+                    try:
+                        backend.close_document(doc.path)
+                        results.append(CloseResult(path=path, status="closed"))
+                    except WordBusy:
+                        raise
+                    except WordError as exc:
+                        results.append(CloseResult(path=path, status="failed", message=str(exc)))
+            return results
+
+        results = self._worker.call(work)
+        self.events.publish({"type": "documents_closed", "count": len(results)})
+        return results
+
     # ---- capture ---------------------------------------------------------
 
-    def capture(self, name: str | None = None, *, kind: SessionKind = "manual") -> CaptureResult:
+    def capture(
+        self,
+        name: str | None = None,
+        *,
+        kind: SessionKind = "manual",
+        paths: list[str] | None = None,
+    ) -> CaptureResult:
         """Save the open Word documents as a new session.
 
         Parameters
@@ -179,14 +234,17 @@ class SessionService:
             Session name; defaults to ``Session``/``Autosave`` plus the time.
         kind : SessionKind
             Kind recorded in the session.
+        paths : list[str] | None
+            Save only the open documents with these paths (case-insensitive);
+            ``None`` saves all of them.
 
         Returns
         -------
         CaptureResult
             The session, warnings and file path; ``path`` is None when Word
-            had no open documents and nothing was saved.
+            had no open documents to save and nothing was saved.
         """
-        session, warnings = self._snapshot(name, kind)
+        session, warnings = self._snapshot(name, kind, paths)
         # An empty Word has nothing worth saving.
         if not session.documents:
             return CaptureResult(session=session, warnings=warnings, path=None)
@@ -331,12 +389,6 @@ class SessionService:
         """Trash old automatic sessions, keeping ``keep`` (default from settings)."""
         return self.store.prune(self.settings.autosave.keep if keep is None else keep)
 
-    def import_legacy(self, dirs: list[Path] | None = None) -> ImportSummary:
-        """Import sessions written by the old tools (default: their usual folders)."""
-        return legacy.import_legacy(
-            self.store, dirs if dirs is not None else legacy.default_legacy_dirs()
-        )
-
     def diff(self, a: str, b: str) -> SessionDiff:
         """Compare the document paths of two sessions, ignoring case."""
         first = [d.path for d in self.store.get(a).documents]
@@ -390,9 +442,14 @@ class SessionService:
 
     # ---- internals -------------------------------------------------------
 
-    def _snapshot(self, name: str | None, kind: SessionKind) -> tuple[Session, list[str]]:
+    def _snapshot(
+        self, name: str | None, kind: SessionKind, paths: list[str] | None = None
+    ) -> tuple[Session, list[str]]:
         """Read Word and build an unsaved session plus capture warnings."""
         documents = self.current()
+        if paths is not None:
+            wanted = {p.casefold() for p in paths}
+            documents = [d for d in documents if d.path.casefold() in wanted]
         now = self._clock()
 
         # Choose the default name from the kind and the capture time.
@@ -596,40 +653,6 @@ def open_service(*, settings: Settings | None = None, fake: bool = False) -> Ses
     worker = ComWorker(factory, call_timeout=settings.restore.open_timeout_s)
     worker.start()
     return SessionService(store, worker, settings, path_exists=path_exists)
-
-
-def first_run_import(service: SessionService, paths: AppPaths) -> ImportSummary | None:
-    """Import the old tools' sessions once, remembering that it was done.
-
-    Parameters
-    ----------
-    service : SessionService
-        Service whose store receives the imported sessions.
-    paths : AppPaths
-        Application paths; the marker file lives in ``paths.data_dir``.
-
-    Returns
-    -------
-    ImportSummary | None
-        ``None`` when the ``.legacy-imported`` marker already exists,
-        otherwise the summary of the import. The marker is written even when
-        individual files failed to import.
-    """
-    # A present marker means the import already ran; do nothing.
-    marker = paths.data_dir / ".legacy-imported"
-    if marker.exists():
-        return None
-
-    # Run the import, then record when it happened and what it found.
-    summary = service.import_legacy()
-    text = (
-        f"{datetime.now().astimezone().isoformat()}\n"
-        f"imported={len(summary.imported)} skipped={len(summary.skipped)} "
-        f"errors={len(summary.errors)}\n"
-    )
-    marker.parent.mkdir(parents=True, exist_ok=True)
-    marker.write_text(text, encoding="utf-8")
-    return summary
 
 
 def _always_exists(path: str) -> bool:

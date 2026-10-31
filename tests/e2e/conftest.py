@@ -11,7 +11,6 @@ from typing import Any
 
 import pytest
 
-from word_session import legacy
 from word_session.cli import main
 from word_session.config import Settings
 from word_session.model import DocumentState
@@ -123,12 +122,6 @@ class WordHarness:
                     document.Range(start, end).Select()
 
         self.app_call(work)
-
-
-@pytest.fixture(autouse=True)
-def _no_real_legacy_dirs(isolated_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Keep the first-run import away from the real legacy folders."""
-    monkeypatch.setattr(legacy, "default_legacy_dirs", lambda: [isolated_home / "no-legacy"])
 
 
 @pytest.fixture

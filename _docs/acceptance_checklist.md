@@ -12,7 +12,7 @@ the sandbox could not kill them):
 - Nine hidden `WINWORD.EXE /Automation -Embedding` processes from job 14:
   PIDs 70684, 15024, 62392, 61516, 73048, 71828, 73376, 74820, 75576. End them
   in Task Manager. Keep your own Word (PID 60884 when the run started).
-- Stray demo `word-session.exe --demo serve` processes (PIDs 17456, 68768 at the
+- Stray demo `word-session-cli.exe --demo serve` processes (PIDs 17456, 68768 at the
   time; another `word-session.exe` PID 70648 was running at the end of job 23).
   They lock `.venv\Scripts\word-session.exe`, which breaks `uv sync`.
 
@@ -27,8 +27,8 @@ installer (`.\packaging\build.ps1 -Installer`) needs Inno Setup 6
 
 ```text
 uv sync
-uv run word-session --version
-uv run word-session list
+uv run word-session-cli --version
+uv run word-session-cli list
 ```
 
 If `uv sync` or `uv run` fails because `word-session.exe` is locked, use
@@ -47,7 +47,7 @@ Without it the tool uses your real folders: sessions in
 `%APPDATA%\word-session\config.toml`, log in
 `%LOCALAPPDATA%\word-session\logs\word-session.log`. Unset the variable
 (`set WORD_SESSION_HOME=`) for the real-data steps (start at login, installer).
-`--demo` before the command (for example `word-session --demo serve`) uses a
+`--demo` before the command (for example `word-session-cli --demo serve`) uses a
 fake Word with three demo documents.
 
 **Sample documents.** `python scripts/make_test_docs.py` prints a folder with
@@ -116,29 +116,21 @@ Use a throwaway `WORD_SESSION_HOME` unless a step says otherwise. Commands use
 | # | Step and exact command | Expected | Result |
 | --- | --- | --- | --- |
 | A1 | Run `python scripts/make_test_docs.py`, open the printed folder. | Four documents of about 10 pages. | |
-| A2 | With Word and a few documents open: `uv run word-session save`, close the documents, `uv run word-session restore`. | Documents reopen, exit code 0, cursors restored. | |
+| A2 | With Word and a few documents open: `uv run word-session-cli save`, close the documents, `uv run word-session-cli restore`. | Documents reopen, exit code 0, cursors restored. | |
 | A3 | After A2 compare capture order with the order Word opened them (oldest first); check the active document and cursor did not change while listing. | Order matches, active document unchanged. | |
 | A4 | If shared-Word tests skipped with the ROT reason: click away from Word once, then `set WORD_SESSION_TEST_SHARED_WORD=1` and `uv run pytest -m shared_word`. | Tests run and pass. | |
-| A5 | Modal dialog timeout: open File > Options in Word, run `uv run word-session current --json`. | Exit 6 within the timeout; Word untouched. | |
-| A6 | `--no-start` with Word closed: close Word, run `uv run word-session restore --no-start`. | Exit 3, and Word does not start. | |
-| A7 | With Word closed: `uv run word-session current`. | `error: Word is not running`, exit 3. | |
-| A8 | With Word running: `uv run word-session doctor`. | All `ok`, exit 0. | |
+| A5 | Modal dialog timeout: open File > Options in Word, run `uv run word-session-cli current --json`. | Exit 6 within the timeout; Word untouched. | |
+| A6 | `--no-start` with Word closed: close Word, run `uv run word-session-cli restore --no-start`. | Exit 3, and Word does not start. | |
+| A7 | With Word closed: `uv run word-session-cli current`. | `error: Word is not running`, exit 3. | |
+| A8 | With Word running: `uv run word-session-cli doctor`. | All `ok`, exit 0. | |
 | A9 | Start Word as administrator, run `doctor` from a normal console. | `word-process` FAIL with the privilege-level message, exit 1. | |
 | A10 | `word-session-WriteSession.cmd` and `word-session-GetDocuments.cmd` from `dist\WordSession` with Word open. | Session saved / documents listed; window pauses only on error. | |
 | A11 | `word-session-LoadSession.cmd` with no argument, then with a session file path. | Latest / that session restored. | |
 
-### B. Legacy import
-
-| # | Step and exact command | Expected | Result |
-| --- | --- | --- | --- |
-| B1 | With a throwaway `WORD_SESSION_HOME`: `uv run word-session import-legacy` against your real `~/.word-session*` folders. | Your sessions imported, originals untouched (compare the old folders before and after). | |
-| B2 | With old `~/.word-session*` present and a fresh `WORD_SESSION_HOME`: `uv run word-session list`. | One stderr line `Imported N sessions from the old word-session tools.`, only on the first run. | |
-| B3 | Run `import-legacy` again. | Nothing imported twice (idempotent). | |
-| B4 | In the browser Settings page, "Import sessions from old tools". | A count line is shown. | |
 
 ### C. Browser manager
 
-Start with `uv run word-session --demo serve --open` (temporary home).
+Start with `uv run word-session-cli --demo serve --open` (temporary home).
 
 | # | Step | Expected | Result |
 | --- | --- | --- | --- |
@@ -146,29 +138,31 @@ Start with `uv run word-session --demo serve --open` (temporary home).
 | C2 | "Save current session", with and without a name. | Toast, new row with local creation time, kind badge "manual", 3 documents. | |
 | C3 | Open a row; rename, pin, edit and save notes. | Changes appear; the list reflects them. | |
 | C4 | Untick one document, "Restore selected". Then use the list's "Restore" button. | Progress bar then per-document badges ("already_open" in demo). The list button opens the detail page and restores all. | |
-| C5 | Two browser tabs: open a second tab as a new login (`word-session open`, or another login code via `POST /api/internal/login-code`). In tab A rename a session. | Tab B's list updates within about 0.5 s without reload. | |
+| C5 | Two browser tabs: open a second tab as a new login (`word-session-cli open`, or another login code via `POST /api/internal/login-code`). In tab A rename a session. | Tab B's list updates within about 0.5 s without reload. | |
 | C6 | Edit in A, then save in a stale B detail page. | Toast "This session was changed in another tab; showing the latest version." | |
 | C7 | "Delete session". | Confirm dialog (Escape cancels, Delete moves to trash), returns to list. | |
 | C8 | Ctrl+C the server while the tab is open. | Red banner "Word Session is not running — reopen it from the tray". | |
-| C9 | Restart `serve` on the same port (`--port N`). | Banner clears; page says "Not signed in. Open the manager from the tray icon or run `word-session open`." | |
+| C9 | Restart `serve` on the same port (`--port N`). | Banner clears; page says "Not signed in. Open the manager from the tray icon or run `word-session-cli open`." | |
 | C10 | Switch OS to dark mode and back; tab through every screen; narrow to 360 px. | Colours follow the theme, focus outline visible, all buttons reachable, tables scroll sideways, no page-wide overflow. | |
 | C11 | Settings: change the autosave interval, Save; then enter 0. | Toast "Settings saved."; the 0 gives an error toast naming the field. | |
 | C12 | Diagnostics page; "Copy report"; paste into an editor. | Table of checks and log tail shown; pasted text has checks first, then log lines. | |
 | C13 | Real Word closed, `serve` without `--demo`: "Open now". | "Word is not running." and a red dot. "Restore" on a session starts Word (unless `--no-start`). | |
+| C14 | Start Word normally (start screen, no document open), then open "Open now" and Diagnostics. | Word is shown as running with 0 documents; no console window flashes on Diagnostics. | |
+| C15 | Open two documents in Word. On "Open now" tick one, press "Save selected as session…", then "Close now" and confirm. | The session holds only the ticked document; the ticks are still set after saving; only that document closes. A document with unsaved changes stays open and is reported. | |
 
 ### D. Tray
 
 | # | Step | Expected | Result |
 | --- | --- | --- | --- |
-| D1 | `uv run word-session --demo app --open`. | Tray icon (white page, blue bookmark) appears; browser opens signed in. | |
-| D2 | In another console `uv run word-session --demo open`. | New tab opens signed in; old tab still works; no second tray icon. | |
+| D1 | `uv run word-session-cli --demo app --open`. | Tray icon (white page, blue bookmark) appears; browser opens signed in. | |
+| D2 | In another console `uv run word-session-cli --demo open`. | New tab opens signed in; old tab still works; no second tray icon. | |
 | D3 | Double-click the icon. | A tab opens. | |
 | D4 | Menu "Save session now". | Balloon notification "Saved 3 documents". | |
 | D5 | Menu "Recent sessions". | Newest first, pinned first; clicking restores. | |
 | D6 | Menu "Open sessions folder", "Open log". | Explorer folder / log file opens. | |
 | D7 | Menu "Quit". | Icon disappears; `instance.json` removed from the state folder. | |
-| D8 | Start the app a second time with the first running (Start menu or `word-session-app`). | Existing instance opens a tab; the second process exits silently. | |
-| D9 | Kill the app in Task Manager, then `word-session open`. | Stale instance file ignored; app starts and opens the manager. | |
+| D8 | Start the app a second time with the first running (Start menu or `word-session`). | Existing instance opens a tab; the second process exits silently. | |
+| D9 | Kill the app in Task Manager, then `word-session-cli open`. | Stale instance file ignored; app starts and opens the manager. | |
 | D10 | Look at the three icon colours (blue, amber, red). | Acceptable. | |
 | D11 | Notifications: trigger a save from the tray, and an autosave failure if you can (see K9). | Balloons appear with sensible text. | |
 
@@ -176,7 +170,7 @@ Start with `uv run word-session --demo serve --open` (temporary home).
 
 | # | Step | Expected | Result |
 | --- | --- | --- | --- |
-| E1 | `word-session --demo app`; set interval 1 minute in Settings with a changing demo state. | An `auto` session appears within about a minute. | |
+| E1 | `word-session-cli --demo app`; set interval 1 minute in Settings with a changing demo state. | An `auto` session appears within about a minute. | |
 | E2 | Untick "Autosave" in the tray. | No new `auto` sessions appear. | |
 | E3 | Real Word, real home: leave autosave on for a few intervals while editing. | `auto` sessions appear only when the document set changes. | |
 
@@ -193,11 +187,11 @@ Start with `uv run word-session --demo serve --open` (temporary home).
 | # | Step | Expected | Result |
 | --- | --- | --- | --- |
 | G1 | After ending the strays: `uv sync`, then `powershell -File packaging\build.ps1`. | Zip built, named 1.0.0. | |
-| G2 | Double-click `dist\WordSession\word-session-app.exe` (or a shortcut with `--demo`); quit from the tray. | Tray icon, manager opens with styling. | |
+| G2 | Double-click `dist\WordSession\word-session.exe` (or a shortcut with `--demo`); quit from the tray. | Tray icon, manager opens with styling. | |
 | G3 | Explorer: exe icon and Properties > Details. | Icon shown; version 1.0.0 (it said 0.1.0 in the job 20 build). | |
 | G4 | `winget install JRSoftware.InnoSetup`, then `powershell -File packaging\build.ps1 -Installer`. | `dist\WordSession-1.0.0-setup.exe`, no compile errors or warnings. | |
-| G5 | Silent install: `setup.exe /VERYSILENT /SUPPRESSMSGBOXES /CURRENTUSER /DIR=<tmp> /TASKS=""`. | Files in `<tmp>`; `<tmp>\word-session.exe --version` prints `word-session 1.0.0`; no Run value. | |
-| G6 | Start `word-session-app.exe` with `WORD_SESSION_HOME=<tmp2>` and `--demo`, run the installer again over it. | The app is stopped (`quit-app`) and files replaced. | |
+| G5 | Silent install: `setup.exe /VERYSILENT /SUPPRESSMSGBOXES /CURRENTUSER /DIR=<tmp> /TASKS=""`. | Files in `<tmp>`; `<tmp>\word-session-cli.exe --version` prints `word-session 1.0.0`; no Run value. | |
+| G6 | Start `word-session.exe` with `WORD_SESSION_HOME=<tmp2>` and `--demo`, run the installer again over it. | The app is stopped (`quit-app`) and files replaced. | |
 | G7 | Silent uninstall `<tmp>\unins000.exe /VERYSILENT`. | Folder gone, `<tmp2>` untouched. | |
 | G8 | Interactive install. Start menu entry "Word Session". With the start-at-login task ticked check `HKCU\...\Run\WordSession`; unticked, none. | Entry launches the tray app and opens the manager; Run value present or absent as chosen; app starts after sign-in. | |
 | G9 | Interactive uninstall. | Final page says sessions and settings were kept and names both folders; Run value removed; running tray app stopped first. | |
@@ -209,7 +203,7 @@ Start with `uv run word-session --demo serve --open` (temporary home).
 
 - **K1. Version mismatch.** `pyproject.toml` says 1.0.0 but the venv's installed
   metadata still says 0.1.0 (a locked `.venv\Scripts\word-session.exe` blocks
-  `uv sync`). `word-session --version` and bundles built from the venv say
+  `uv sync`). `word-session-cli --version` and bundles built from the venv say
   0.1.0. A clean `uv sync` after the strays end fixes it. Not worked around.
 - **K2. Installer never compiled.** Inno Setup (`iscc.exe`) is not installed
   (decision D5). Job 21 is `partial`: `installer.iss` and the `-Installer`
@@ -259,8 +253,6 @@ None. Job 21 is the only `partial` (K2). Job 22 (remove `legacy/`) waits for you
 
 - Store (05): invalid ids with path separators are rejected; selectors beyond
   range raise `SessionNotFound`.
-- Legacy (06): imported v1 files get `imported_from` and a store-unique id; all
-  documents imported with `active = False`.
 - Config (07): nested settings also reject unknown keys; unusable log dir falls
   back to a WARNING console handler.
 - COM (09): documents listed oldest first (Word returns newest at index 1);
@@ -289,7 +281,7 @@ None. Job 21 is the only `partial` (K2). Job 22 (remove `legacy/`) waits for you
 
 ## 5. How to report a bug
 
-1. Run `uv run word-session doctor --json` (or `word-session.exe doctor --json`).
+1. Run `uv run word-session-cli doctor --json` (or `word-session-cli.exe doctor --json`).
 2. Attach the last 100 lines of `%LOCALAPPDATA%\word-session\logs\word-session.log`
    (or the log under your `WORD_SESSION_HOME`).
 3. Note the checklist step number (for example `C5`), what you did, what you

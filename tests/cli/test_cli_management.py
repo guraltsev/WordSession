@@ -2,20 +2,18 @@
 
 import json
 import logging
-import shutil
+import sys
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
 
-from word_session import legacy
+from word_session import shortcut
 from word_session.cli import EXIT_ERROR, EXIT_NOT_FOUND, EXIT_USAGE, main
 from word_session.service import SessionService
 from word_session.word.fake import FakeDocument, FakeWordBackend
 
 Run = Callable[..., tuple[int, str, str]]
-
-FIXTURES = Path(__file__).parent.parent / "fixtures" / "legacy"
 
 
 @pytest.fixture(autouse=True)
@@ -197,73 +195,46 @@ def test_diff_human_and_json(
     assert json.loads(out) == {"added": [r"C:\Docs\c.docx"], "removed": [r"C:\Docs\a.docx"]}
 
 
-# ---- import-legacy ----------------------------------------------------------------
-
-
-def test_import_legacy_human_and_json(run: Run, tmp_path: Path) -> None:
-    source = tmp_path / "old"
-    source.mkdir()
-    shutil.copy(FIXTURES / "20241123T101500 word-session.json", source)
-    shutil.copy(FIXTURES / "unknown.json", source)
-
-    code, out, err = run("import-legacy", str(source))
-    assert code == 0
-    assert "Imported 1 sessions, skipped 0, 1 errors" in out
-    assert "unknown.json" in err
-
-    code, out, _ = run("--json", "import-legacy", str(source))
-    data = json.loads(out)
-    assert data["imported"] == []
-    assert len(data["skipped"]) == 1
-    assert data["skipped"][0].endswith("word-session.json")
-    assert data["errors"][0]["path"].endswith("unknown.json")
-
-
 # ---- doctor -----------------------------------------------------------------------
 
 
 def test_doctor_prints_ten_checks(run: Run) -> None:
     code, out, _ = run("doctor")
     lines = out.splitlines()
-    assert len(lines) == 10
+    assert len(lines) == 9
     assert code == (1 if any(line.startswith("FAIL") for line in lines) else 0)
 
     code, out, _ = run("--json", "doctor")
     checks = json.loads(out)
     assert [c["name"] for c in checks][:2] == ["python", "pywin32"]
-    assert len(checks) == 10
+    assert len(checks) == 9
     assert code == (1 if any(c["status"] == "fail" for c in checks) else 0)
 
 
-def test_doctor_does_not_run_first_run_import(run: Run, isolated_home: Path) -> None:
-    run("doctor")
-    assert not (isolated_home / ".legacy-imported").exists()
+# ---- shortcut --------------------------------------------------------------------
 
 
-# ---- first-run import in the CLI -----------------------------------------------------
-
-
-def test_cli_prints_first_run_import_message_once(
+def test_shortcut_create_and_remove(
     run: Run, isolated_home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    source = isolated_home / "old"
-    source.mkdir()
-    shutil.copy(FIXTURES / "20241123T101500 word-session.json", source)
-    monkeypatch.setattr(legacy, "default_legacy_dirs", lambda: [source])
-
-    code, _, err = run("list")
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(
+        shortcut, "_write_link", lambda link, target, arguments: link.write_bytes(b"lnk")
+    )
+    link = isolated_home / "start-menu" / "Word Session.lnk"
+    code, out, _ = run("shortcut")
+    assert (code, out.strip()) == (0, f"Created {link}")
+    assert link.is_file()
+    code, out, _ = run("--json", "shortcut", "--remove")
     assert code == 0
-    assert "Imported 1 sessions from the old word-session tools." in err
-
-    code, _, err = run("list")
-    assert code == 0
-    assert "Imported" not in err
-    assert (isolated_home / ".legacy-imported").exists()
+    assert json.loads(out) == {"path": str(link), "exists": False}
+    assert not link.exists()
+    code, out, _ = run("shortcut", "--remove")
+    assert (code, out.strip()) == (0, "There was no Start menu shortcut")
 
 
-def test_import_legacy_command_skips_first_run_import(
-    run: Run, isolated_home: Path, tmp_path: Path
-) -> None:
-    code, _, _ = run("import-legacy", str(tmp_path))
-    assert code == 0
-    assert not (isolated_home / ".legacy-imported").exists()
+def test_shortcut_off_windows_fails(run: Run, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sys, "platform", "linux")
+    code, _, err = run("shortcut")
+    assert code == 1
+    assert "only supported on Windows" in err

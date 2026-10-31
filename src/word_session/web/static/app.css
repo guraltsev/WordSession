@@ -175,6 +175,31 @@ dl.meta { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1r
 dl.meta dt { color: var(--muted); }
 dl.meta dd { margin: 0; word-break: break-all; }
 
+/* Small round "?" that opens the help page in a new tab. */
+.help-link, .help-link-sample {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--muted);
+  text-decoration: none;
+  flex: none;
+  vertical-align: middle;
+}
+.help-link:hover { color: var(--accent); border-color: var(--accent); }
+.with-help { display: inline-flex; align-items: center; gap: 0.3rem; }
+/* The row carries the heading's margins so the "?" centres on the text. */
+.heading-row { display: flex; align-items: center; gap: 0.5rem; margin: 1.4rem 0 0.5rem; }
+.heading-row:has(h2) { margin: 0.2rem 0 1rem; }
+.heading-row h2, .heading-row h3 { margin: 0; }
+#nav a.nav-help { margin-left: auto; }
+
 .title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-bottom: 1rem; }
 .title-row h2 { margin: 0; }
 .actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1rem 0; }

@@ -15,10 +15,10 @@ dependencies = [
 ]
 
 [project.scripts]
-word-session = "word_session.cli:main"
+word-session-cli = "word_session.cli:main"
 
 [project.gui-scripts]
-word-session-app = "word_session.cli:app_main"
+word-session = "word_session.cli:app_main"
 
 [build-system]
 requires = ["hatchling"]
@@ -42,7 +42,6 @@ dev = [
 line-length = 100
 target-version = "py313"
 src = ["src", "tests"]
-extend-exclude = ["legacy"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "PTH", "RUF"]
@@ -50,7 +49,6 @@ ignore = ["E501"]
 
 [tool.pyright]
 include = ["src", "tests"]
-exclude = ["legacy"]
 pythonVersion = "3.13"
 typeCheckingMode = "standard"
 reportMissingModuleSource = false

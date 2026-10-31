@@ -77,8 +77,13 @@ function showSignedOut() {
         "p",
         {},
         "Not signed in. Open the manager from the tray icon or run ",
-        h("code", {}, "word-session open"),
+        h("code", {}, "word-session-cli open"),
         ".",
+      ),
+      h(
+        "p",
+        {},
+        h("a", { href: "help.html#signing-in", target: "_blank", rel: "noopener" }, "Why am I seeing this?"),
       ),
     ),
   );

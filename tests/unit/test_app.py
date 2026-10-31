@@ -11,7 +11,7 @@ import pystray
 import pytest
 
 from word_session import app as app_module
-from word_session import legacy, tray
+from word_session import tray
 from word_session.app import App
 from word_session.config import Settings, load_settings, save_settings
 from word_session.instance import InstanceLock, read_instance
@@ -69,11 +69,6 @@ class FakeAutostart:
 
     def app_command(self) -> str:
         return "fake-app-command"
-
-
-@pytest.fixture(autouse=True)
-def _no_real_legacy_dirs(isolated_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(legacy, "default_legacy_dirs", lambda: [isolated_home / "no-legacy"])
 
 
 @pytest.fixture
@@ -150,6 +145,31 @@ def test_open_manager_mints_new_code_each_time(
 def test_open_manager_without_server_does_nothing(isolated_home: Path, opened: list[str]) -> None:
     app, _ = make_app(isolated_home)
     app.open_manager()
+    assert opened == []
+
+
+def test_open_help_opens_help_page_without_login(
+    isolated_home: Path, fake_icon: type[FakeIcon], opened: list[str]
+) -> None:
+    app, _ = make_app(isolated_home)
+    responses: list[httpx.Response] = []
+
+    def hook(icon: FakeIcon) -> None:
+        app.open_help()
+        responses.append(httpx.get(opened[0], timeout=5))  # no login cookie
+
+    fake_icon.hook = hook
+    app.run()
+    assert len(opened) == 1
+    assert opened[0].endswith("/help.html")
+    assert "/login" not in opened[0]
+    assert responses[0].status_code == 200
+    assert "<title>Word Session help</title>" in responses[0].text
+
+
+def test_open_help_without_server_does_nothing(isolated_home: Path, opened: list[str]) -> None:
+    app, _ = make_app(isolated_home)
+    app.open_help()
     assert opened == []
 
 
@@ -250,6 +270,7 @@ class FakeApp:
     def __init__(self) -> None:
         self.autostart = FakeAutostart()
         self.opened = 0
+        self.help_opened = 0
         self.quit_called = 0
         self.autosave_triggers = 0
 
@@ -258,6 +279,9 @@ class FakeApp:
 
     def open_manager(self) -> None:
         self.opened += 1
+
+    def open_help(self) -> None:
+        self.help_opened += 1
 
     def quit(self) -> None:
         self.quit_called += 1
@@ -292,12 +316,14 @@ def test_menu_layout_and_default_item(tray_icon: tuple[FakeIcon, FakeApp]) -> No
         "Start at login",
         "Open sessions folder",
         "Open log",
+        "Help",
         "Quit",
     ]
     assert item_named(icon.menu, "Open manager…").default
     item_named(icon.menu, "Open manager…")(icon)
+    item_named(icon.menu, "Help")(icon)
     item_named(icon.menu, "Quit")(icon)
-    assert (fake_app.opened, fake_app.quit_called) == (1, 1)
+    assert (fake_app.opened, fake_app.help_opened, fake_app.quit_called) == (1, 1, 1)
     assert icon.title == "Word Session"
 
 

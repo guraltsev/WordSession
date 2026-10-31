@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from word_session import shortcut
 from word_session.config import AppPaths, load_settings
 from word_session.model import DocumentState, Session
 from word_session.service import SessionService
@@ -98,6 +99,15 @@ def test_capture_creates_session(client: TestClient, service: SessionService) ->
     assert body["saved"] is True
     assert body["session"]["name"] == "Mine"
     assert service.get(body["session"]["id"]).name == "Mine"
+
+
+def test_capture_with_paths_and_close(client: TestClient, fake_backend: FakeWordBackend) -> None:
+    path = fake_backend.documents[0].path
+    body = client.post("/api/sessions", json={"name": "Some", "paths": [path]}).json()
+    assert [d["path"] for d in body["session"]["documents"]] == [path]
+    results = client.post("/api/word/close", json={"paths": [path]}).json()
+    assert [r["status"] for r in results] == ["closed"]
+    assert all(d.path != path for d in fake_backend.documents)
 
 
 def test_capture_without_body_uses_default_name(client: TestClient) -> None:
@@ -269,22 +279,7 @@ def test_unknown_settings_key_is_422(client: TestClient) -> None:
     assert client.put("/api/settings", json={"bogus": 1}).status_code == 422
 
 
-# ---- import, doctor, logs ---------------------------------------------------------
-
-
-def test_import_legacy(
-    client: TestClient, service: SessionService, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    legacy_dir = tmp_path / "legacy"
-    legacy_dir.mkdir()
-    fixture = Path(__file__).parents[1] / "fixtures" / "legacy" / "v1.json"
-    (legacy_dir / "20260101T000000 word-session.json").write_bytes(fixture.read_bytes())
-    monkeypatch.setattr(
-        "word_session.legacy.default_legacy_dirs", lambda: [legacy_dir, tmp_path / "none"]
-    )
-    body = client.post("/api/import-legacy").json()
-    assert set(body) == {"imported", "skipped", "errors"}
-    assert len(body["imported"]) + len(body["errors"]) >= 1
+# ---- doctor, logs ---------------------------------------------------------
 
 
 def test_doctor_without_module_is_empty(
@@ -371,3 +366,51 @@ def test_config_error_is_400(
 def test_unknown_api_path_is_json_404(client: TestClient) -> None:
     response = client.get("/api/nothing")
     assert response.status_code == 404
+
+
+# ---- Start menu shortcut ----------------------------------------------------------
+
+
+@pytest.fixture
+def fake_link_writer(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Write a stub file instead of running PowerShell, as if on Windows."""
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(
+        shortcut, "_write_link", lambda link, target, arguments: link.write_bytes(b"lnk")
+    )
+
+
+def test_shortcut_create_and_remove(
+    client: TestClient, isolated_home: Path, fake_link_writer: None
+) -> None:
+    link = isolated_home / "start-menu" / "Word Session.lnk"
+    state = client.get("/api/shortcut").json()
+    assert state == {"supported": True, "exists": False, "path": str(link)}
+    assert client.put("/api/shortcut").json()["exists"] is True
+    assert link.is_file()
+    assert client.get("/api/shortcut").json()["exists"] is True
+    assert client.delete("/api/shortcut").json()["exists"] is False
+    assert not link.exists()
+
+
+def test_shortcut_failure_is_500(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail(link: Path, target: Path, arguments: str) -> None:
+        raise shortcut.ShortcutError("could not create the shortcut: denied")
+
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(shortcut, "_write_link", fail)
+    response = client.put("/api/shortcut")
+    assert response.status_code == 500
+    assert "denied" in response.json()["error"]["message"]
+
+
+def test_shortcut_unsupported_off_windows(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(sys, "platform", "linux")
+    assert client.get("/api/shortcut").json()["supported"] is False
+    assert client.put("/api/shortcut").status_code == 501
+
+
+def test_shortcut_requires_login(anon_client: TestClient) -> None:
+    assert anon_client.put("/api/shortcut").status_code == 401

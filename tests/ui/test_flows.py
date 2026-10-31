@@ -61,6 +61,48 @@ def test_pin_toggle(logged_in_page: Page) -> None:
     )
 
 
+def untitled_buttons(page: Page) -> list[str]:
+    """Return the text of every visible button that has no tooltip."""
+    return page.eval_on_selector_all(
+        "button",
+        "els => els.filter(b => b.offsetParent !== null && !b.title.trim())"
+        ".map(b => b.textContent.trim())",
+    )
+
+
+def test_every_button_has_a_tooltip_and_help_links_open_the_guide(
+    logged_in_page: Page,
+) -> None:
+    page = logged_in_page
+    save_session(page, "Tooltips")
+    assert untitled_buttons(page) == []
+    open_detail(page, "Tooltips")
+    page.get_by_role("button", name="Restore selected").click()
+    expect(page.get_by_text("Restore finished")).to_be_visible()
+    assert untitled_buttons(page) == []
+    page.get_by_role("button", name="Rename").click()
+    assert untitled_buttons(page) == []
+    for route, heading in (
+        ("now", "Open now"),
+        ("settings", "Settings"),
+        ("diagnostics", "Diagnostics"),
+    ):
+        page.goto(page.url.split("#")[0] + f"#/{route}")
+        expect(page.get_by_role("heading", name=heading, level=2)).to_be_visible()
+        expect(page.locator("button").first).to_be_visible()
+        assert untitled_buttons(page) == [], route
+
+    # A "?" link opens the guide at its section in a new tab, without login.
+    link = page.locator("#app a.help-link").first
+    expect(link).to_have_attribute("target", "_blank")
+    with page.context.expect_page() as new_tab:
+        link.click()
+    help_page = new_tab.value
+    help_page.wait_for_load_state()
+    assert "/help.html#" in help_page.url
+    expect(help_page.get_by_role("heading", name="Diagnostics page")).to_be_visible()
+
+
 def test_partial_restore_report(logged_in_page: Page) -> None:
     page = logged_in_page
     save_session(page, "Restoreme")

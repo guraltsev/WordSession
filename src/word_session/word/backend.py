@@ -176,6 +176,21 @@ class WordBackend(Protocol):
         """
         ...
 
+    def close_document(self, path: str) -> None:
+        """Close an open document without saving it.
+
+        Parameters
+        ----------
+        path : str
+            Path of an open document.
+
+        Raises
+        ------
+        WordError
+            If the document is not open or Word refuses to close it.
+        """
+        ...
+
     def disconnect(self) -> None:
         """Drop references to Word; never raises and leaves Word running."""
         ...

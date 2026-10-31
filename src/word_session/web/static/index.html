@@ -13,18 +13,20 @@
 <header class="topbar">
   <h1 class="brand">Word Session</h1>
   <nav id="nav" aria-label="Main">
-    <a href="#/sessions" data-route="sessions">Sessions</a>
-    <a href="#/now" data-route="now">Open now</a>
-    <a href="#/settings" data-route="settings">Settings</a>
-    <a href="#/diagnostics" data-route="diagnostics">Diagnostics</a>
+    <a href="#/sessions" data-route="sessions" title="Your saved sessions. Save the current Word documents, search and filter the list, pin sessions to keep them, and reopen a session in Word. Start here.">Sessions</a>
+    <a href="#/now" data-route="now" title="A live, read-only list of the documents open in Word at this moment. Use it to see what a new session would contain. You can also save them as a session from here.">Open now</a>
+    <a href="#/settings" data-route="settings" title="Choose how autosave works, how sessions are restored, where files are stored and whether Word Session starts with Windows. Changes apply when you press Save settings.">Settings</a>
+    <a href="#/diagnostics" data-route="diagnostics" title="Runs checks on Word, Python and your folders and shows the program log. Use it when saving or restoring does not work. You can copy the whole report to send it to someone.">Diagnostics</a>
+    <a href="help.html" class="nav-help" target="_blank" rel="noopener" title="Opens the user guide in a new tab. It explains every page, setting and command in detail. Your work here stays open.">Help</a>
   </nav>
-  <p id="word-status" class="word-status" role="status">
+  <p id="word-status" class="word-status" role="status" title="Shows whether Word is running right now. It is checked every 10 seconds and never starts Word. A green dot means Word can be used for saving and restoring.">
     <span id="word-dot" class="dot" aria-hidden="true"></span>
     <span id="word-status-text">Word: checking</span>
   </p>
 </header>
 <div id="banner" class="banner" role="alert" hidden>
   Word Session is not running — reopen it from the tray
+  <a href="help.html#not-running" class="help-link" target="_blank" rel="noopener" title="Help: Word Session is not running (opens in a new tab)" aria-label="Help: Word Session is not running">?</a>
 </div>
 <main id="app" tabindex="-1"></main>
 <div id="toasts" class="toasts" aria-live="polite"></div>

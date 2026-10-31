@@ -17,7 +17,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 Location = Literal["local", "unc", "url", "unsaved"]
-SessionKind = Literal["manual", "auto", "imported"]
+SessionKind = Literal["manual", "auto"]
 RestoreStatus = Literal["opened", "already_open", "missing", "locked", "failed", "skipped"]
 
 
@@ -113,6 +113,14 @@ class RestoreResult(BaseModel):
 
     path: str
     status: RestoreStatus
+    message: str = ""
+
+
+class CloseResult(BaseModel):
+    """Describe the outcome of closing one open document."""
+
+    path: str
+    status: Literal["closed", "not_open", "unsaved", "failed"]
     message: str = ""
 
 

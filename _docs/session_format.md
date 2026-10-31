@@ -41,7 +41,7 @@ truncated session.
 | `version` | integer, always `1` | no (default) | Format version; see compatibility below. |
 | `id` | string | yes | `YYYYMMDDTHHMMSS-slug` of the creation time and name; equals the file name without `.json`. Sorts chronologically. |
 | `name` | string | yes | Display name chosen by the user or generated. |
-| `kind` | `"manual"`, `"auto"` or `"imported"` | yes | How the session came to be. Retention (pruning) applies only to `auto`. |
+| `kind` | `"manual"` or `"auto"` | yes | How the session came to be. Retention (pruning) applies only to `auto`. |
 | `pinned` | boolean | no (`false`) | Protects the session from pruning. |
 | `created_at` | ISO 8601 date-time with UTC offset | yes | Creation time. A value without an offset is rejected. |
 | `host` | string | no (`""`) | Computer name that saved the session. |
@@ -95,22 +95,3 @@ human-readable hint in the manager.
 - **Deleting** moves the file to `trash\` in the sessions folder; the id stays
   reserved.
 
-## Legacy formats that are imported
-
-`word-session import-legacy` (and the automatic first-run import) converts
-these into `kind: "imported"` v1 sessions. The old files are copied, never
-modified or deleted.
-
-| Source | Folder | Layout | Encoding |
-| --- | --- | --- | --- |
-| Python v0 | `~\.word-session\` | top-level key `"word-session:"` (trailing colon) with entries having `FullName`, `Line`, `Page` | UTF-8, ASCII or cp1252 |
-| PowerShell | `~\.word-sessions\` | top-level key `"sessions"` with entries having `FullName`, `cursorLine`, `pageNumber` | UTF-16 LE (BOM) |
-
-Imported documents have `page` and `line` but no character offsets
-(`start` and `end` are null); the page and line are copied as-is, and values
-of zero or less become null. `created_at` is taken from the timestamp in the
-file name, else from the file's modification time, and the name is
-`Imported <date time>`. The imported session carries an extra field
-`imported_from` (source path, SHA-256 and format), which makes importing
-idempotent: a file that was already imported is skipped. A legacy file that
-cannot be read or decoded is reported by the import and skipped.

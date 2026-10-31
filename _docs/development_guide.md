@@ -38,14 +38,16 @@ uv run pytest -m word
 ## Building the Windows bundle
 
 ```text
-powershell -ExecutionPolicy Bypass -File packaging/build.ps1
-powershell -ExecutionPolicy Bypass -File packaging/smoke_test.ps1 -Dist dist\WordSession
+_scripts\build.cmd [-NoSync]
+powershell -ExecutionPolicy Bypass -File _scripts/smoke_test.ps1 -Dist dist\WordSession
 ```
 
+`_scripts\build.cmd` is a shortcut for
+`powershell -ExecutionPolicy Bypass -File _scripts/build.ps1`.
+
 `build.ps1` runs `uv sync --frozen`, PyInstaller with `packaging/word-session.spec`
-(onedir: console `word-session.exe` and windowed `word-session-app.exe` in one
-`dist\WordSession` folder), copies the legacy `.cmd` shims from
-`packaging/shims/` next to the executables, and zips the folder to
+(onedir: console `word-session.exe` and windowed `word-session.exe` in one
+`dist\WordSession` folder), and zips the folder to
 `dist\WordSession-<version>-win64.zip`. Pass `-NoSync` to skip `uv sync` (for
 example when an executable in `.venv` is locked by a running process).
 `smoke_test.ps1` exercises the built executable against the fake Word backend
@@ -83,8 +85,9 @@ src/word_session/
     tray.py                 # pystray icon + menu
     instance.py             # single-instance mutex + instance.json
     autostart.py            # HKCU Run toggle
+    shortcut.py             # per-user Start menu shortcut
 tests/                      # unit, contract, cli, api, ui, integration
-packaging/                  # PyInstaller spec, optional installer, icons
+packaging/                  # PyInstaller spec, icons
 docs/                       # policies, guides, migration plan
 legacy/                     # old scripts, read-only reference
 ```

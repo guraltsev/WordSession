@@ -18,7 +18,6 @@ from dataclasses import dataclass
 from typing import Literal
 
 from word_session.config import AppPaths, load_settings
-from word_session.legacy import default_legacy_dirs
 from word_session.service import SessionService
 
 _log = logging.getLogger(__name__)
@@ -73,7 +72,7 @@ def run_checks(
     -------
     list[Check]
         Ten checks: python, pywin32, word-installed, word-running,
-        word-process, elevated, sessions-dir, config, log, legacy.
+        word-process, elevated, sessions-dir, config, log.
     """
     tasklist = tasklist if tasklist is not None else _tasklist
     is_admin = is_admin if is_admin is not None else _is_admin
@@ -141,14 +140,6 @@ def run_checks(
     def log() -> Check:
         return Check("log", "ok", str(paths.log_dir / "word-session.log"))
 
-    def legacy() -> Check:
-        found = [str(d) for d in default_legacy_dirs() if d.is_dir()]
-        imported = (paths.data_dir / ".legacy-imported").exists()
-        where = ", ".join(found) if found else "no legacy folders"
-        return Check(
-            "legacy", "ok", f"{where}; first-run import done: {'yes' if imported else 'no'}"
-        )
-
     # Run each check on its own so one failure is reported, not fatal.
     results: list[Check] = []
     probes = (
@@ -161,7 +152,6 @@ def run_checks(
         sessions_dir,
         config,
         log,
-        legacy,
     )
     for probe in probes:
         try:
@@ -187,6 +177,7 @@ def _tasklist() -> str:
         text=True,
         timeout=15,
         check=False,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
     )
     return done.stdout
 

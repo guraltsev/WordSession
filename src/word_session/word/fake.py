@@ -189,6 +189,18 @@ class FakeWordBackend:
                 raise WordError(f"Document is not open: {path}")
             self.active_index = index
 
+    def close_document(self, path: str) -> None:
+        """Close the named open document, keeping the active index valid."""
+        self._enter("close_document")
+        with self._lock:
+            self._require_connected()
+            index = self._find(path)
+            if index is None:
+                raise WordError(f"Document is not open: {path}")
+            del self.documents[index]
+            if self.active_index > index or self.active_index >= len(self.documents):
+                self.active_index = max(self.active_index - 1, 0)
+
     def disconnect(self) -> None:
         """Drop the connection; the fake Word keeps running."""
         self._enter("disconnect", scripted=False)

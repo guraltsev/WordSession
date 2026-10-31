@@ -4,7 +4,7 @@ param(
     [switch]$SkipServe
 )
 $ErrorActionPreference = 'Stop'
-$exe = (Resolve-Path (Join-Path $Dist 'word-session.exe')).Path
+$exe = (Resolve-Path (Join-Path $Dist 'word-session-cli.exe')).Path
 $homeDir = Join-Path ([IO.Path]::GetTempPath()) ("ws-smoke-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $homeDir | Out-Null
 $env:WORD_SESSION_HOME = $homeDir

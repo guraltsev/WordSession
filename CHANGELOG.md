@@ -7,6 +7,59 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-31
+
+### Added
+
+- Built-in user guide, served by the app at `/help.html` without sign-in and
+  opened from the new **Help** item in the tray menu and the **Help** link in
+  the manager's top bar.
+- Tooltips on every button in the manager, and small **?** links next to
+  buttons, headings and settings that open the matching section of the guide
+  in a new tab.
+- **Create Start menu shortcut** on the Settings page and
+  `word-session shortcut [--remove]`: adds Word Session to the current
+  user's own Start menu (no administrator rights).
+
+- **Open now** page: tick documents, **Save selected as session…** (the ticks
+  stay) and **Close now**. Close now never discards work: documents with
+  unsaved changes stay open and are reported. API: `POST /api/word/close`
+  and an optional `paths` list on `POST /api/sessions`.
+- `README.md` and an MIT `LICENSE`.
+
+### Fixed
+
+- Word running with no document open (for example on its start screen) was
+  reported as "Word not running"; it is now found and used.
+- Opening Diagnostics no longer flashes a console window.
+
+### Changed
+
+- **Breaking:** the programs are renamed. The command-line program is now
+  `word-session-cli` (was `word-session`) and the tray application, which
+  opens the manager, is now `word-session` (was `word-session-app`). Update
+  scripts, shortcuts and autostart entries; the Start menu shortcut and
+  **Start at login** are rewritten when you save the settings again.
+- Every heading, label, setting, column and button in the manager has a 2–4
+  sentence tooltip.
+- The user guide now lives in `src/word_session/web/static/help.html`;
+  `docs/user_guide.md` points there.
+- The build scripts moved to `_scripts/` (`build.cmd`, `build.ps1`,
+  `smoke_test.ps1`).
+
+### Removed
+
+- Everything for the old tools: `word-session import-legacy`, the `serve
+  --no-import` flag, the automatic first-run import, `/api/import-legacy`,
+  the Settings button, the doctor `legacy` check and the `imported` session
+  kind. Sessions of kind `imported` no longer load.
+- The Inno Setup installer (`packaging/installer.iss`, `build.ps1
+  -Installer`). Word Session ships as a zip only: unzip it anywhere and use
+  the Start menu button.
+- The `word-session-LoadSession.cmd`, `word-session-WriteSession.cmd` and
+  `word-session-GetDocuments.cmd` shims of the old tools are no longer
+  shipped; use `word-session restore`, `save` and `current`.
+
 ## [1.0.0] - 2026-10-31
 
 First release of the rewritten Word Session. It replaces the Python v0 and

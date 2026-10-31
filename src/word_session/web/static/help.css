@@ -1,0 +1,52 @@
+/* Layout of the help page (help.html); colours come from app.css. */
+
+.help-layout {
+  display: grid;
+  grid-template-columns: 16rem minmax(0, 1fr);
+  gap: 1.5rem;
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.toc {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  font-size: 0.92rem;
+}
+.toc h2 { font-size: 1rem; margin: 0 0 0.5rem; }
+.toc ol { margin: 0; padding-left: 1.2rem; }
+.toc ol ol { padding-left: 1rem; }
+.toc li { margin: 0.15rem 0; }
+
+main.guide { max-width: 48rem; margin: 0; padding: 0; }
+.guide section { scroll-margin-top: 1rem; }
+.guide h2 { margin-top: 2rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+.guide > section:first-child h2 { margin-top: 0; border-top: none; }
+.guide h3 { margin-top: 1.6rem; }
+.guide h4 { margin: 1.2rem 0 0.3rem; font-size: 1rem; }
+.guide [id] { scroll-margin-top: 1rem; }
+.guide :target { background: var(--warn-bg); color: var(--warn-text); border-radius: 4px; }
+.guide section:target { background: none; color: inherit; }
+.guide table { margin: 0.5rem 0 1rem; background: var(--surface); border: 1px solid var(--border); }
+.guide table.cli td:first-child { white-space: nowrap; }
+.guide code, .guide kbd, .guide pre { font-family: ui-monospace, Consolas, monospace; font-size: 0.9em; }
+.guide kbd { border: 1px solid var(--border); border-radius: 4px; padding: 0 0.3rem; background: var(--surface); }
+.guide pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.7rem;
+  overflow-x: auto;
+}
+.guide dl.items dt { font-weight: 600; margin-top: 0.7rem; }
+.guide dl.items dd { margin: 0.15rem 0 0 1.2rem; }
+
+@media (max-width: 760px) {
+  .help-layout { grid-template-columns: minmax(0, 1fr); }
+  .toc { position: static; max-height: none; }
+  .guide table.cli td:first-child { white-space: normal; }
+}

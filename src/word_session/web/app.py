@@ -24,10 +24,9 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from word_session import __version__
+from word_session import __version__, shortcut
 from word_session.config import ConfigError, Settings, app_paths, save_settings
-from word_session.legacy import ImportSummary
-from word_session.model import DocumentState, Location, Session, SessionKind
+from word_session.model import CloseResult, DocumentState, Location, Session, SessionKind
 from word_session.service import RestoreInProgress, RevisionConflict, SessionService
 from word_session.store import AmbiguousSelector, SessionNotFound
 from word_session.web.auth import Auth
@@ -53,7 +52,7 @@ __all__ = [
 _EXPIRED_PAGE = (
     "<!doctype html><html lang='en'><head><meta charset='utf-8'><title>Link expired</title>"
     "</head><body><p>This link has expired. Open the manager again from the tray icon "
-    "or run <code>word-session open</code>.</p></body></html>"
+    "or run <code>word-session-cli open</code>.</p></body></html>"
 )
 
 
@@ -103,6 +102,15 @@ class CaptureBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str | None = None
+    paths: list[str] | None = None
+
+
+class CloseBody(BaseModel):
+    """Request body of ``POST /api/word/close``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    paths: list[str]
 
 
 class CaptureResponse(BaseModel):
@@ -139,6 +147,14 @@ class LogLines(BaseModel):
     """Response of ``GET /api/logs``."""
 
     lines: list[str] = Field(default_factory=list)
+
+
+class ShortcutState(BaseModel):
+    """Response of the ``/api/shortcut`` routes."""
+
+    supported: bool  # False off Windows
+    exists: bool
+    path: str
 
 
 # ---- application factory --------------------------------------------------------
@@ -242,6 +258,11 @@ def create_app(
         """List the documents open in Word right now."""
         return service.current()
 
+    @app.post("/api/word/close")
+    def close_word_documents(body: CloseBody) -> list[CloseResult]:
+        """Close open documents without saving; ones with unsaved changes stay open."""
+        return service.close_documents(body.paths)
+
     # ---- sessions ----
 
     @app.get("/api/sessions")
@@ -278,7 +299,10 @@ def create_app(
     @app.post("/api/sessions")
     def capture(response: Response, body: CaptureBody | None = None) -> CaptureResponse:
         """Save the documents open in Word as a new session."""
-        result = service.capture(body.name if body is not None else None)
+        result = service.capture(
+            body.name if body is not None else None,
+            paths=body.paths if body is not None else None,
+        )
         saved = result.path is not None
         response.status_code = 201 if saved else 200
         return CaptureResponse(session=result.session, warnings=result.warnings, saved=saved)
@@ -364,10 +388,29 @@ def create_app(
             on_settings_changed()
         return settings
 
-    @app.post("/api/import-legacy")
-    def import_legacy() -> ImportSummary:
-        """Import sessions written by the old tools."""
-        return service.import_legacy()
+    # ---- Start menu shortcut ----
+
+    @app.get("/api/shortcut")
+    def get_shortcut() -> ShortcutState:
+        """Report whether the per-user Start menu shortcut exists."""
+        return _shortcut_state()
+
+    @app.put("/api/shortcut")
+    def create_shortcut() -> ShortcutState:
+        """Create (or replace) the per-user Start menu shortcut."""
+        try:
+            shortcut.create()
+        except NotImplementedError as exc:
+            raise StarletteHTTPException(501, str(exc)) from exc
+        except shortcut.ShortcutError as exc:
+            raise StarletteHTTPException(500, str(exc)) from exc
+        return _shortcut_state()
+
+    @app.delete("/api/shortcut")
+    def delete_shortcut() -> ShortcutState:
+        """Remove the per-user Start menu shortcut; harmless when absent."""
+        shortcut.remove()
+        return _shortcut_state()
 
     @app.get("/api/doctor")
     def doctor() -> list[dict[str, Any]]:
@@ -404,6 +447,15 @@ def _exists(service: SessionService, path: str, location: Location) -> bool | No
     if location not in ("local", "unc"):
         return None
     return service._path_exists(path)
+
+
+def _shortcut_state() -> ShortcutState:
+    """Describe the Start menu shortcut for the API."""
+    return ShortcutState(
+        supported=shortcut.supported(),
+        exists=shortcut.exists(),
+        path=str(shortcut.shortcut_path()),
+    )
 
 
 def _require_if_match(header: str | None) -> str:

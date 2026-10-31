@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Word Session help</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="help.css">
+</head>
+<body>
+<a class="skip-link" href="#guide">Skip to content</a>
+<header class="topbar">
+  <h1 class="brand">Word Session help</h1>
+  <nav aria-label="Help">
+    <a href="/" title="Go to the session manager (needs to be opened from the tray once)">Open the manager</a>
+  </nav>
+</header>
+
+<div class="help-layout">
+<nav class="toc" aria-label="Contents">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#overview">What Word Session does</a></li>
+    <li><a href="#quick-start">Quick start</a></li>
+    <li><a href="#install">Set up and first run</a></li>
+    <li><a href="#tray">The tray icon</a></li>
+    <li><a href="#manager">The manager</a>
+      <ol>
+        <li><a href="#sessions-page">Sessions</a></li>
+        <li><a href="#session-detail">One session</a></li>
+        <li><a href="#open-now">Open now</a></li>
+        <li><a href="#settings">Settings</a></li>
+        <li><a href="#diagnostics">Diagnostics</a></li>
+      </ol>
+    </li>
+    <li><a href="#how-restore-works">How restoring works</a></li>
+    <li><a href="#autosave">Autosave and clean-up</a></li>
+    <li><a href="#kinds">Session kinds and pinning</a></li>
+    <li><a href="#cli">Command line</a></li>
+    <li><a href="#files">Where your files live</a></li>
+    <li><a href="#privacy">Privacy and security</a></li>
+    <li><a href="#troubleshooting">Troubleshooting</a></li>
+    <li><a href="#uninstall">Remove Word Session</a></li>
+  </ol>
+</nav>
+
+<main id="guide" class="guide" tabindex="-1">
+
+<section id="overview">
+<h2>What Word Session does</h2>
+<p>Word Session remembers which Microsoft Word documents you have open, and
+where your cursor is in each of them, so that you can reopen all of them later
+with one click or one command. A saved set of documents is called a
+<strong>session</strong>.</p>
+<ul>
+  <li>It saves sessions when you ask, and also automatically in the background
+    (<a href="#autosave">autosave</a>).</li>
+  <li>Restoring a session reopens the documents and puts the cursor back where
+    it was. It never closes or changes anything that is already open.</li>
+  <li>It runs in your own Windows account. It needs no administrator rights,
+    no internet connection and no Python.</li>
+  <li>Everything is controlled from an icon in the notification area
+    (<a href="#tray">the tray</a>), from a page in your web browser
+    (<a href="#manager">the manager</a>), or from the
+    <a href="#cli">command line</a>.</li>
+</ul>
+<p>Word Session does <em>not</em> save the contents of your documents. A
+session holds only the file names, the cursor positions and which document
+was in front. Save your work in Word as usual.</p>
+</section>
+
+<section id="quick-start">
+<h2>Quick start</h2>
+<ol>
+  <li>Unzip Word Session and run <code>word-session.exe</code> (see
+    <a href="#install">Set up</a>). An icon appears in the notification area
+    and the manager opens in your browser. Press
+    <a href="#start-menu">Create Start menu shortcut</a> on the Settings page
+    so you can start it from the Start menu next time.</li>
+  <li>Open the documents you are working on in Word.</li>
+  <li>Press <strong>Save current session</strong> on the
+    <a href="#sessions-page">Sessions</a> page, or choose <strong>Save session
+    now</strong> in the tray menu.</li>
+  <li>Later, even after a restart, choose <strong>Restore latest
+    session</strong> in the tray menu, or press <strong>Restore</strong> next
+    to a session in the manager. Your documents reopen with the cursor where
+    you left it.</li>
+</ol>
+<p>Even if you never save by hand, autosave keeps a recent copy of what you
+had open every 10 minutes.</p>
+</section>
+
+<section id="install">
+<h2>Set up and first run</h2>
+<p>Word Session needs no installation and no administrator rights. Everything
+it sets up is for your Windows account only.</p>
+<ol>
+  <li>Unzip <code>WordSession-&lt;version&gt;-win64.zip</code> into a folder of
+    your own, for example
+    <code>%LOCALAPPDATA%\Programs\WordSession</code>. Keep the folder where it
+    is afterwards: the Start menu shortcut and start at login point into
+    it.</li>
+  <li>Double-click <code>word-session.exe</code> in that folder.</li>
+  <li>In the manager that opens, go to <a href="#settings">Settings</a> and
+    press <a href="#start-menu">Create Start menu shortcut</a>.</li>
+  <li>Optionally, tick <a href="#tray-login">Start at login</a> in the tray
+    menu so Word Session starts every time you sign in.</li>
+</ol>
+<h3 id="first-run">First run</h3>
+<p>When Word Session starts, its icon appears in the notification area (click
+the <kbd>^</kbd> arrow next to the clock if it is hidden; you can drag it out
+to keep it visible) and the manager opens in your default browser.</p>
+<p>Only one Word Session runs per Windows user. Starting it a second time
+just opens the manager of the one already running.</p>
+</section>
+
+<section id="tray">
+<h2>The tray icon</h2>
+<p>Click the icon to open the manager. Right-click it for the menu.</p>
+
+<h3 id="tray-states">What the icon shows</h3>
+<table>
+  <thead><tr><th scope="col">Icon</th><th scope="col">Meaning</th></tr></thead>
+  <tbody>
+    <tr><td>Normal</td><td>Idle; everything is fine.</td></tr>
+    <tr><td>Busy</td><td>A save or restore started from the tray is running.</td></tr>
+    <tr><td>Warning</td><td>The last tray action or an autosave failed. A
+      notification said why. The warning clears after the next successful save
+      or restore.</td></tr>
+  </tbody>
+</table>
+
+<h3 id="tray-menu">Menu items</h3>
+<dl class="items">
+  <dt id="tray-save">Save session now</dt>
+  <dd>Saves the documents open in Word right now as a new manual session with
+    an automatic name (<q>Session 2026-10-31 14:30</q>). A notification says how
+    many documents were saved and warns about documents that cannot be
+    restored. If Word has no documents open, nothing is saved.</dd>
+
+  <dt id="tray-restore">Restore latest session</dt>
+  <dd>Reopens the documents of the newest session of any kind. A notification
+    reports how many opened and lists the ones that failed.</dd>
+
+  <dt id="tray-recent">Recent sessions</dt>
+  <dd>Up to eight sessions: pinned ones first (marked with <code>*</code>),
+    then the newest. Click one to restore it.</dd>
+
+  <dt id="tray-manager">Open manager…</dt>
+  <dd>Opens the <a href="#manager">manager</a> in your browser. This is also
+    what a click on the icon does.</dd>
+
+  <dt id="tray-autosave">Autosave</dt>
+  <dd>Ticked while <a href="#autosave">autosave</a> is on. Click to switch it
+    on or off; the change is saved in your settings and applies at once.</dd>
+
+  <dt id="tray-login">Start at login</dt>
+  <dd>Ticked when Word Session starts automatically after you sign in to
+    Windows. Click to switch it on or off.</dd>
+
+  <dt id="tray-folders">Open sessions folder / Open log</dt>
+  <dd>Opens the folder that holds your session files, or the log file, in
+    Explorer or your text editor. See <a href="#files">Where your files
+    live</a>.</dd>
+
+  <dt id="tray-help">Help</dt>
+  <dd>Opens this guide in your browser.</dd>
+
+  <dt id="tray-quit">Quit</dt>
+  <dd>Stops Word Session: no more autosaves and the manager stops answering.
+    Word and your documents are left alone. Start it again from your
+    <a href="#start-menu">Start menu shortcut</a> or with
+    <code>word-session.exe</code>.</dd>
+</dl>
+</section>
+
+<section id="manager">
+<h2>The manager</h2>
+<p>The manager is a page in your web browser, served by Word Session itself
+on your own computer. It is not a website: nothing leaves your computer.</p>
+
+<h3 id="signing-in">Opening the manager</h3>
+<p>Open it with <strong>Open manager…</strong> in the tray menu, by clicking
+the tray icon, by starting Word Session from the Start menu, or with
+<code>word-session-cli open</code>. Each of these opens the browser with a
+one-time sign-in link, so that no other program or website can use the
+manager.</p>
+<p>If a tab says <strong>Not signed in</strong> (for example after Word
+Session was restarted, or when you open the address from a bookmark), open
+the manager from the tray again. Tabs you already have open stay signed in
+while Word Session runs. This help page needs no sign-in.</p>
+
+<h3 id="topbar">The top bar</h3>
+<ul>
+  <li><strong>Sessions</strong>, <strong>Open now</strong>,
+    <strong>Settings</strong>, <strong>Diagnostics</strong> switch between the
+    pages described below. <strong>Help</strong> opens this guide in a new
+    tab.</li>
+  <li id="word-status">The Word indicator on the right shows whether Word is
+    running (green dot, with its version) or not (red dot). It is checked every
+    10 seconds and never starts Word.</li>
+  <li id="not-running">A red bar <q>Word Session is not running</q> means the
+    page lost contact with Word Session, for example because you chose
+    <strong>Quit</strong>. Start Word Session again; the page reconnects by
+    itself.</li>
+</ul>
+<p id="help-links">Every button has a tooltip: rest the mouse pointer on it
+to see what it does. The small <span class="help-link-sample">?</span> links
+open the matching part of this guide in a new tab.</p>
+
+<section id="sessions-page">
+<h3>Sessions page</h3>
+<p>The start page lists every saved session, newest first.</p>
+
+<h4 id="save-session">Save current session</h4>
+<p>Type a name in <strong>Session name (optional)</strong> and press
+<strong>Save current session</strong>. The documents open in Word right now
+are saved as a new <em>manual</em> session. Without a name the session is
+called <q>Session</q> plus the date and time. Messages at the bottom of the
+page confirm the save and warn about documents that cannot be restored:</p>
+<ul>
+  <li>a document that was <strong>never saved</strong> (<q>Document1</q>) has
+    no file to reopen; it is listed in the session but skipped on
+    restore;</li>
+  <li>a document with <strong>unsaved changes</strong> will be reopened from
+    its last saved version. Save it in Word to keep the changes.</li>
+</ul>
+<p>If Word has no documents open, nothing is saved. If Word is not running,
+you get the message <q>Word is not running</q>.</p>
+
+<h4 id="search">Search</h4>
+<p>Type in <strong>Search</strong> to show only the sessions whose name, id,
+or any document path contains the text (upper and lower case do not
+matter). For example, <q>thesis</q> finds every session that had a file
+from your thesis folder open.</p>
+
+<h4 id="filters">Filters</h4>
+<p>The filter buttons narrow the list further. Click one to switch it on
+(highlighted), click again to switch it off.</p>
+<ul>
+  <li><strong>manual</strong>, <strong>auto</strong>,
+    <strong>imported</strong>: only sessions of that
+    <a href="#kinds">kind</a>. Only one kind can be on at a time.</li>
+  <li><strong>pinned</strong>: only <a href="#pinned">pinned</a>
+    sessions. Combines with a kind.</li>
+</ul>
+
+<h4 id="session-list">The list</h4>
+<table>
+  <thead><tr><th scope="col">Column</th><th scope="col">Meaning</th></tr></thead>
+  <tbody>
+    <tr><td>Name</td><td>Click the name, or anywhere in the row, to open the
+      session.</td></tr>
+    <tr><td>Created</td><td>When the session was saved, in your local
+      time.</td></tr>
+    <tr><td>Kind</td><td>manual, auto or imported; see
+      <a href="#kinds">Session kinds</a>.</td></tr>
+    <tr><td>Documents</td><td>How many documents the session holds.</td></tr>
+    <tr><td>Missing</td><td>How many of its files no longer exist where they
+      were (moved, renamed or deleted). Highlighted when not zero. Cloud
+      documents are not checked.</td></tr>
+    <tr><td id="pin">Pinned</td><td><strong>Pin</strong> protects the session
+      from automatic clean-up; the button then reads
+      <strong>Pinned</strong>. Click again to unpin.</td></tr>
+    <tr><td id="restore-button">Restore</td><td>Opens the session and
+      immediately restores all its documents, showing the
+      <a href="#restore-progress">progress</a>.</td></tr>
+  </tbody>
+</table>
+<p>The list updates by itself when a session is saved, changed or deleted,
+including by autosave, by the tray or in another browser tab.</p>
+</section>
+
+<section id="session-detail">
+<h3>One session</h3>
+<p>Click a session in the list to see and change it. <strong>Sessions</strong>
+at the top left takes you back to the list.</p>
+
+<h4 id="rename">Rename</h4>
+<p>Press <strong>Rename</strong>, type the new name and press
+<strong>Save name</strong> (or <kbd>Enter</kbd>). <strong>Cancel</strong>
+(or <kbd>Esc</kbd>) keeps the old name. Renaming does not change the
+session's id.</p>
+
+<h4 id="detail-pin">Pin</h4>
+<p>Same as <a href="#pin">Pin</a> in the list: protects the session from
+automatic clean-up.</p>
+
+<h4 id="session-info">Details</h4>
+<p><strong>Id</strong> is the session's permanent identifier (and its file
+name), <strong>Created</strong> the time it was saved, <strong>Host</strong>
+the computer it was saved on and <strong>Word version</strong> the version of
+Word that was running.</p>
+
+<h4 id="notes">Notes</h4>
+<p>Free text for yourself, for example what you were working on. Type and
+press <strong>Save notes</strong>. <code>word-session-cli show</code> prints
+them, and <code>word-session-cli notes</code> sets them from the command
+line.</p>
+
+<h4 id="documents">Documents</h4>
+<table>
+  <thead><tr><th scope="col">Column</th><th scope="col">Meaning</th></tr></thead>
+  <tbody>
+    <tr><td>Tick box</td><td>Selects the document for
+      <a href="#restore-selected">Restore selected</a> and
+      <a href="#remove-documents">Remove selected</a>. The box in the header
+      selects or clears all. All documents start selected.</td></tr>
+    <tr><td>Document</td><td>The full path or web address. <em>active</em>
+      marks the document that was in front; it is opened last so that it ends
+      up in front again.</td></tr>
+    <tr><td id="locations">Location</td><td>
+      <strong>local</strong>: a file on a drive of this computer (including
+      synced OneDrive folders);
+      <strong>unc</strong>: a file on a network share
+      (<code>\\server\share\…</code>);
+      <strong>url</strong>: a document opened from the web, such as SharePoint
+      or OneDrive online;
+      <strong>unsaved</strong>: never saved, cannot be restored.</td></tr>
+    <tr><td>File</td><td><strong>exists</strong> or <strong>missing</strong>
+      for local and network files; <em>n/a</em> for web and unsaved
+      documents, which are not checked.</td></tr>
+    <tr><td>Position</td><td>Page and line of the cursor when the session was
+      saved.</td></tr>
+  </tbody>
+</table>
+
+<h4 id="restore-selected">Restore selected</h4>
+<p>Reopens only the ticked documents. Untick what you do not need first.
+See <a href="#how-restore-works">How restoring works</a>.</p>
+
+<h4 id="remove-documents">Remove selected from session</h4>
+<p>Removes the ticked documents from this session, after you confirm. The
+files themselves are not touched. Use it to tidy a session that collected
+documents you no longer want, or to drop missing files.</p>
+
+<h4 id="delete-session">Delete session</h4>
+<p>Deletes the whole session after you confirm. The session file is moved to
+the <code>trash</code> folder inside the sessions folder, so you can get it
+back by moving the file out again (see <a href="#files">Where your files
+live</a>). The documents themselves are not touched.</p>
+
+<h4 id="restore-progress">Restore progress and results</h4>
+<p>During a restore a progress bar counts the documents. When it ends, the
+panel says <q>Restore finished</q> or <q>Restore finished with problems</q>
+and lists every document with its result:</p>
+<table id="restore-statuses">
+  <thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead>
+  <tbody>
+    <tr><td>opened</td><td>The document was opened and the cursor
+      placed.</td></tr>
+    <tr><td>already_open</td><td>It was already open in Word; it was not
+      opened again, but the cursor was put back.</td></tr>
+    <tr><td>skipped</td><td>It was never saved, or this was a dry run.</td></tr>
+    <tr><td>missing</td><td>The file is no longer there.</td></tr>
+    <tr><td>locked</td><td>Someone else, or another program, has the file
+      open.</td></tr>
+    <tr><td>failed</td><td>Word could not open it; the message says why (for
+      example a dialog was open in Word).</td></tr>
+  </tbody>
+</table>
+<p>A message such as <q>position not restored</q> next to an opened document
+means the document opened but the cursor could not be placed.</p>
+
+<h4 id="conflicts">Changes from another tab</h4>
+<p>If the session was changed elsewhere (another tab, the tray, the command
+line) while you were editing it, your change is not applied; the page shows
+<q>This session was changed in another tab</q> and loads the latest version.
+Make your change again.</p>
+</section>
+
+<section id="open-now">
+<h3>Open now page</h3>
+<p>Shows whether Word is running and lists the documents open in it right now,
+with their location and cursor position. This is exactly what a save would
+capture when nothing is ticked.</p>
+<p>Tick the boxes of some documents to work with just those.
+<strong>Save selected as session…</strong> asks for an optional name and
+saves the ticked documents as a new manual session, like
+<a href="#save-session">Save current session</a>. The ticks stay after saving,
+so you can then press <strong id="close-now">Close now</strong> to close the
+same documents in Word. Close now asks for confirmation and never discards
+work: documents with unsaved changes stay open and are reported.</p>
+</section>
+
+<section id="settings">
+<h3>Settings page</h3>
+<p>Change the settings and press <strong>Save settings</strong>. Changes apply
+at once; there is no need to restart.</p>
+
+<h4 id="settings-autosave">Autosave</h4>
+<dl class="items">
+  <dt>Autosave enabled</dt>
+  <dd>Saves the open documents in the background. Same as the tray's
+    <a href="#tray-autosave">Autosave</a> item. Default: on.</dd>
+  <dt>Autosave interval (minutes)</dt>
+  <dd>How often to check Word, from 1 to 1440. Default: 10.</dd>
+  <dt>Automatic sessions to keep</dt>
+  <dd>How many automatic sessions are kept; older ones are moved to the trash.
+    From 0 to 10000. Pinned, manual and imported sessions are never removed.
+    Default: 20.</dd>
+  <dt>Autosave only when something changed</dt>
+  <dd>Skip the autosave when the same documents are open, in the same order,
+    with the same cursor positions and the same document in front, as in the
+    newest automatic session. Default: on.</dd>
+</dl>
+
+<h4 id="settings-restore">Restore</h4>
+<dl class="items">
+  <dt>Start Word when restoring</dt>
+  <dd>Starts Word if it is not running when you restore. When off, restoring
+    with Word closed fails with <q>Word is not running</q>. Default: on.</dd>
+  <dt>Restore cursor positions</dt>
+  <dd>Puts the cursor back where it was. When off, documents open at the top.
+    Default: on.</dd>
+  <dt>Open timeout (seconds)</dt>
+  <dd>How long to wait for Word to open one document before reporting it as
+    failed, from 1 to 3600. Raise it for very large documents or slow network
+    drives. Default: 60.</dd>
+</dl>
+
+<h4 id="settings-general">General</h4>
+<dl class="items">
+  <dt>Sessions folder</dt>
+  <dd>Where session files are stored. Leave it empty for the default
+    (<code>%APPDATA%\word-session\sessions</code>). Point it at a folder you
+    back up or sync if you like. Existing sessions are not moved; move the
+    files yourself.</dd>
+  <dt>Start at login</dt>
+  <dd>Start Word Session when you sign in to Windows. Same as the tray's
+    <a href="#tray-login">Start at login</a> item.</dd>
+</dl>
+
+<h4 id="start-menu">Start menu</h4>
+<p><strong>Create Start menu shortcut</strong> adds a <strong>Word
+Session</strong> entry to <em>your own</em> Start menu
+(<code>%APPDATA%\Microsoft\Windows\Start Menu\Programs</code>). Other users of
+the computer do not see it, and no administrator rights are needed. The entry
+starts Word Session and opens the manager; if Word Session is already running,
+it just opens the manager.</p>
+<p>The shortcut points at the folder Word Session runs from now. If you move
+that folder, start <code>word-session.exe</code> from the new place and
+press <strong>Recreate Start menu shortcut</strong>.
+<strong>Remove Start menu shortcut</strong> takes the entry out again; nothing
+else is changed. From the command line: <code>word-session-cli shortcut</code> and
+<code>word-session-cli shortcut --remove</code>.</p>
+
+</section>
+
+<section id="diagnostics">
+<h3>Diagnostics page</h3>
+<p>Use it when something does not work. It shows the same checks as
+<code>word-session-cli doctor</code>:</p>
+<table>
+  <thead><tr><th scope="col">Check</th><th scope="col">What it tells you</th></tr></thead>
+  <tbody>
+    <tr><td>python, pywin32</td><td>The program's own components are
+      present.</td></tr>
+    <tr><td>word-installed</td><td>Word is installed and can be
+      automated.</td></tr>
+    <tr><td>word-running</td><td>Word is running and answers.</td></tr>
+    <tr><td>word-process</td><td>Whether a <code>WINWORD.EXE</code> process
+      exists, even if Word does not answer.</td></tr>
+    <tr><td>elevated</td><td>Whether Word Session runs as administrator. Word
+      Session and Word must run with the same rights; see
+      <a href="#trouble-not-running">Troubleshooting</a>.</td></tr>
+    <tr><td>sessions-dir, config, log</td><td>The sessions folder, settings
+      file and log can be read and written; unreadable session files are
+      named.</td></tr>
+  </tbody>
+</table>
+<p><strong>ok</strong> is fine, <strong>warn</strong> may explain a problem,
+<strong>fail</strong> needs fixing; the detail column says what to do.</p>
+<p id="log">Below the checks are the last 200 lines of the log.
+<strong id="copy-report">Copy report</strong> copies the checks and the log
+lines to the clipboard so you can paste them into an e-mail or a bug
+report.</p>
+</section>
+</section>
+
+<section id="how-restore-works">
+<h2>How restoring works</h2>
+<ul>
+  <li><strong>Nothing is closed.</strong> Documents you already have open stay
+    open; documents of the session that are already open are not opened a
+    second time (their cursor is still put back).</li>
+  <li><strong>Every document is tried.</strong> A missing, locked or failing
+    document does not stop the others. You always get a per-document
+    report.</li>
+  <li><strong>The front document ends up in front.</strong> The document that
+    was active when you saved is opened last.</li>
+  <li><strong>The cursor goes back.</strong> Word Session remembers the exact
+    character position and also the page and line. If the document has
+    changed so much that the position no longer exists, page and line are
+    used instead.</li>
+  <li><strong>Word is started if needed</strong>, unless you switched off
+    <a href="#settings-restore">Start Word when restoring</a>.</li>
+  <li><strong>One restore at a time.</strong> Starting a second restore while
+    one is running is refused; wait for the first to finish. Autosave pauses
+    during a restore.</li>
+  <li><strong>Saved versions are opened.</strong> A document that had unsaved
+    changes when the session was saved opens as it was last saved in Word.
+    Never-saved documents are skipped.</li>
+  <li><strong>Read-only stays read-only.</strong> A document that was open
+    read-only is reopened read-only.</li>
+</ul>
+</section>
+
+<section id="autosave">
+<h2>Autosave and clean-up</h2>
+<p>While Word Session runs, it looks at Word every
+<a href="#settings-autosave">autosave interval</a> (10 minutes by default)
+and saves an <em>automatic</em> session named <q>Autosave</q> plus the date
+and time. It skips the save when:</p>
+<ul>
+  <li>Word is not running (autosave never starts Word);</li>
+  <li>Word has no documents open;</li>
+  <li>nothing changed since the last automatic session (unless you switched
+    off <a href="#settings-autosave">Autosave only when something
+    changed</a>);</li>
+  <li>a restore is running.</li>
+</ul>
+<p>After each autosave, only the newest 20 automatic sessions (the
+<a href="#settings-autosave">number to keep</a>) are kept; older ones are
+moved to the <code>trash</code> folder. Manual and
+<a href="#pinned">pinned</a> sessions are never removed automatically.</p>
+<p>If an autosave fails, for example because Word shows a dialog, the tray
+icon shows a warning and a notification says why. The next successful
+autosave clears it.</p>
+<p>Switch autosave on or off with the tray's <a href="#tray-autosave">Autosave</a>
+item or on the <a href="#settings">Settings</a> page.</p>
+</section>
+
+<section id="kinds">
+<h2>Session kinds and pinning</h2>
+<table>
+  <thead><tr><th scope="col">Kind</th><th scope="col">Made by</th><th scope="col">Removed automatically?</th></tr></thead>
+  <tbody>
+    <tr><td>manual</td><td>You: the Save buttons, the tray, or
+      <code>word-session-cli save</code>.</td><td>Never.</td></tr>
+    <tr><td>auto</td><td><a href="#autosave">Autosave</a>.</td><td>Yes, beyond
+      the number to keep, unless pinned.</td></tr>
+  </tbody>
+</table>
+<h3 id="pinned">Pinned sessions</h3>
+<p>Pinning protects a session from automatic clean-up and lists it first in
+the tray's <a href="#tray-recent">Recent sessions</a>. Pin an automatic
+session to keep it for good. Pin with the <a href="#pin">Pin</a> button or
+<code>word-session-cli pin &lt;session&gt;</code>; unpin the same way or with
+<code>word-session-cli unpin &lt;session&gt;</code>.</p>
+</section>
+
+<section id="cli">
+<h2>Command line</h2>
+<p>Everything the manager does is also available as a command, for scripts,
+shortcuts and keyboard users. Open a terminal in the folder you unzipped Word
+Session into (the one with <code>word-session.exe</code>), or add that folder
+to your <code>PATH</code>.</p>
+
+<h3 id="cli-commands">Commands</h3>
+<table class="cli">
+  <thead><tr><th scope="col">Command</th><th scope="col">What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>save [--name NAME]</code></td><td>Save the open documents as
+      a manual session.</td></tr>
+    <tr><td><code>restore [SESSION]</code><br>(alias <code>load</code>)</td>
+      <td>Reopen a session; the latest one when <code>SESSION</code> is left
+      out. Options:
+      <code>--only GLOB</code> (repeatable) restores only documents whose path
+      or file name matches, such as <code>"*thesis*"</code>;
+      <code>--no-start</code> does not start Word;
+      <code>--no-position</code> does not move the cursor;
+      <code>--dry-run</code> reports what would open and opens nothing.</td></tr>
+    <tr><td><code>current</code></td><td>List the documents open in Word right
+      now.</td></tr>
+    <tr><td><code>list [--limit N] [--kind KIND]</code></td><td>List sessions,
+      newest first (20 by default).</td></tr>
+    <tr><td><code>show SESSION</code></td><td>Show one session with its
+      documents and notes.</td></tr>
+    <tr><td><code>rename SESSION NEW_NAME</code></td><td>Rename a
+      session.</td></tr>
+    <tr><td><code>notes SESSION TEXT</code></td><td>Replace the notes of a
+      session.</td></tr>
+    <tr><td><code>pin SESSION</code>, <code>unpin SESSION</code></td><td>Protect
+      a session from clean-up, or undo it.</td></tr>
+    <tr><td><code>delete SESSION [--yes] [--purge]</code></td><td>Move a
+      session to the trash after asking; <code>--yes</code> does not ask,
+      <code>--purge</code> deletes the file for good.</td></tr>
+    <tr><td><code>prune [--keep N]</code></td><td>Move automatic sessions
+      beyond the newest <code>N</code> to the trash now.</td></tr>
+    <tr><td><code>diff SESSION_A SESSION_B</code></td><td>Show which documents
+      were added and removed between two sessions.</td></tr>
+    <tr><td><code>doctor</code></td><td>Run the <a href="#diagnostics">diagnostic
+      checks</a>.</td></tr>
+    <tr><td><code>open</code></td><td>Open the manager in the browser (starts
+      Word Session if needed).</td></tr>
+    <tr><td><code>app [--open]</code></td><td>Run the tray application (what
+      <code>word-session.exe</code> and the Start menu shortcut
+      do).</td></tr>
+    <tr><td><code>serve [--port N] [--open]</code></td><td>Run only the manager,
+      without the tray icon or autosave.</td></tr>
+    <tr><td><code>quit-app</code></td><td>Stop the running tray
+      application.</td></tr>
+    <tr><td><code>shortcut [--remove]</code></td><td>Add Word Session to your
+      own <a href="#start-menu">Start menu</a>, or remove it.</td></tr>
+  </tbody>
+</table>
+
+<h3 id="cli-options">Options for every command</h3>
+<table class="cli">
+  <tbody>
+    <tr><td><code>--json</code></td><td>Machine-readable output.</td></tr>
+    <tr><td><code>-q</code>, <code>--quiet</code></td><td>Print only
+      errors.</td></tr>
+    <tr><td><code>-v</code>, <code>--verbose</code></td><td>Debug output and
+      full error details.</td></tr>
+    <tr><td><code>--sessions-dir DIR</code></td><td>Use another sessions folder
+      for this command.</td></tr>
+    <tr><td><code>--config PATH</code></td><td>Use another settings
+      file.</td></tr>
+    <tr><td><code>--version</code>, <code>--help</code></td><td>Show the
+      version, or the help of any command
+      (<code>word-session-cli restore --help</code>).</td></tr>
+  </tbody>
+</table>
+
+<h3 id="selectors">Naming a session</h3>
+<p>Wherever a command takes <code>SESSION</code>, you can write, checked in
+this order:</p>
+<ol>
+  <li><code>latest</code>, <code>latest-manual</code> or
+    <code>latest-auto</code>;</li>
+  <li><code>-1</code>, <code>-2</code>, … for the newest, second newest, …;</li>
+  <li>the path of a session <code>.json</code> file, anywhere;</li>
+  <li>the exact id;</li>
+  <li>the exact name (upper and lower case do not matter);</li>
+  <li>the first four or more characters of the id, if only one session
+    matches.</li>
+</ol>
+<p>If a name or id start matches several sessions, the command lists them and
+does nothing; use more of the id.</p>
+
+<h3 id="exit-codes">Exit codes</h3>
+<table>
+  <tbody>
+    <tr><td>0</td><td>Success.</td></tr>
+    <tr><td>1</td><td>Error.</td></tr>
+    <tr><td>2</td><td>Wrong command or options.</td></tr>
+    <tr><td>3</td><td>Word is not running or not installed.</td></tr>
+    <tr><td>4</td><td>Restore finished, but some documents failed.</td></tr>
+    <tr><td>5</td><td>No session matches, or several do.</td></tr>
+    <tr><td>6</td><td>Word is not responding.</td></tr>
+  </tbody>
+</table>
+
+<h3 id="cli-examples">Examples</h3>
+<pre>word-session-cli save --name "Thesis chapter 3"
+word-session-cli list --kind manual
+word-session-cli restore                       # the latest session
+word-session-cli restore thesis                # by name
+word-session-cli restore -2 --only "*.docx"    # second newest, .docx only
+word-session-cli restore --dry-run             # what would open?
+word-session-cli pin 20261031T1430
+word-session-cli diff -2 -1                    # what changed since last time?</pre>
+</section>
+
+<section id="files">
+<h2>Where your files live</h2>
+<table>
+  <thead><tr><th scope="col">What</th><th scope="col">Location</th></tr></thead>
+  <tbody>
+    <tr><td>Sessions</td><td><code>%APPDATA%\word-session\sessions\</code>
+      (or the <a href="#settings-general">sessions folder</a> you
+      chose)</td></tr>
+    <tr><td>Deleted and cleaned-up sessions</td><td><code>trash</code> inside
+      the sessions folder</td></tr>
+    <tr><td>Settings</td><td><code>%APPDATA%\word-session\config.toml</code></td></tr>
+    <tr><td>Log</td><td><code>%LOCALAPPDATA%\word-session\logs\word-session.log</code></td></tr>
+    <tr><td>The program</td><td>The folder you unzipped it into</td></tr>
+    <tr><td>Start menu shortcut</td><td><code>%APPDATA%\Microsoft\Windows\Start Menu\Programs\Word Session.lnk</code></td></tr>
+  </tbody>
+</table>
+<p>Each session is one small text file named after its id, which you can
+copy, back up or sync. To undo a delete, move the file from
+<code>trash</code> back into the sessions folder.</p>
+<p id="config-file">The settings file is plain text and can be edited while
+Word Session is stopped. It holds the same settings as the
+<a href="#settings">Settings</a> page:</p>
+<pre># %APPDATA%\word-session\config.toml
+sessions_dir = "D:\\Backup\\word-sessions"   # optional
+
+[autosave]
+enabled = true
+interval_minutes = 10
+keep = 20
+only_on_change = true
+
+[restore]
+start_word = true
+restore_position = true
+open_timeout_s = 60
+
+[ui]
+start_at_login = false</pre>
+</section>
+
+<section id="privacy">
+<h2>Privacy and security</h2>
+<ul>
+  <li>The manager is served only to your own computer (address
+    <code>127.0.0.1</code>); other computers on the network cannot reach
+    it.</li>
+  <li>Opening the manager requires a one-time sign-in link that only Word
+    Session can create, so other programs and websites in your browser cannot
+    use it.</li>
+  <li>Word Session makes no internet connections. Sessions store file paths
+    and cursor positions, never document contents.</li>
+</ul>
+</section>
+
+<section id="troubleshooting">
+<h2>Troubleshooting</h2>
+<p>Start with the <a href="#diagnostics">Diagnostics</a> page or
+<code>word-session-cli doctor</code>: lines marked <strong>warn</strong> or
+<strong>fail</strong> say what to fix.</p>
+
+<h3 id="trouble-not-responding">"Word is not responding"</h3>
+<p>Word is busy or showing a dialog, for example <q>Save changes?</q>, a
+sign-in prompt or the document recovery pane. Switch to Word, close the
+dialog, and try again. For very large documents, raise the
+<a href="#settings-restore">Open timeout</a>.</p>
+
+<h3 id="trouble-not-running">"Word is not running" although Word is open</h3>
+<ul>
+  <li>Word makes itself available to other programs only after it has had
+    focus once or has a document open. Click into a Word window or open a
+    document, then try again.</li>
+  <li>If either Word or Word Session was started <q>as administrator</q>, they
+    cannot see each other. Start both normally. The
+    <strong>elevated</strong> check reports this.</li>
+</ul>
+
+<h3 id="trouble-missing">Documents are reported as missing</h3>
+<p>The file was moved, renamed or deleted, or the drive or network share is
+not connected. Reconnect the drive and restore again. To clean up the
+session, select the missing documents and use
+<a href="#remove-documents">Remove selected from session</a>.</p>
+
+<h3 id="trouble-locked">Documents are reported as locked</h3>
+<p>Someone else, or another program, has the file open for editing. Close it
+there, or open it read-only from Word.</p>
+
+<h3 id="trouble-cloud">Files on OneDrive or SharePoint</h3>
+<p>Documents opened from the web are saved by their address and reopened from
+it; you need to be signed in to Office. Documents in a synced OneDrive folder
+behave as local files, but an <q>online-only</q> file may take a moment to
+download while it is restored.</p>
+
+<h3 id="trouble-unsaved">Some documents are not in the session</h3>
+<p>A document that has never been saved has no file, so it cannot be
+reopened; it is listed as <em>unsaved</em> and skipped. Save it in Word
+first, then save the session again.</p>
+
+<h3 id="trouble-signed-out">The manager says "Not signed in"</h3>
+<p>Open it again with <strong>Open manager…</strong> in the tray menu or
+<code>word-session-cli open</code>. Bookmarks to the manager do not work after
+Word Session restarts, because it chooses a new address each time.</p>
+
+<h3 id="trouble-no-icon">The tray icon is missing</h3>
+<p>Click the <kbd>^</kbd> arrow next to the clock; Windows may hide new icons
+there. If Word Session is not running, start it from your Start menu
+shortcut or with <code>word-session.exe</code>. If
+starting it does nothing, run <code>word-session-cli open</code> in a terminal and
+look at the log (path in <a href="#files">Where your files live</a>).</p>
+
+<h3 id="trouble-autosave">Autosave does not save</h3>
+<p>Check that <a href="#tray-autosave">Autosave</a> is ticked in the tray
+menu and that Word is running with documents open. With
+<a href="#settings-autosave">Autosave only when something changed</a> on, no
+new session appears while nothing changed; this is intended.</p>
+
+<h3 id="trouble-report">Reporting a problem</h3>
+<p>Open the <a href="#diagnostics">Diagnostics</a> page, press
+<strong>Copy report</strong> and paste the result into your message.</p>
+</section>
+
+<section id="uninstall">
+<h2>Remove Word Session</h2>
+<ol>
+  <li>Untick <a href="#tray-login">Start at login</a> in the tray menu.</li>
+  <li>Press <strong>Remove Start menu shortcut</strong> on the
+    <a href="#start-menu">Settings</a> page.</li>
+  <li>Choose <a href="#tray-quit">Quit</a> in the tray menu.</li>
+  <li>Delete the folder you unzipped Word Session into.</li>
+</ol>
+<p><strong>Your sessions and settings are kept.</strong> Delete
+<code>%APPDATA%\word-session</code> and
+<code>%LOCALAPPDATA%\word-session</code> as well if you want them gone.</p>
+</section>
+
+</main>
+</div>
+</body>
+</html>

@@ -4,10 +4,10 @@ Call ``main(argv)`` to run a command and ``app_main()`` for the console
 script. The everyday commands are ``save``, ``restore`` (alias ``load``),
 ``current``, ``list`` and ``show``; the management commands are ``rename``,
 ``delete``, ``pin``, ``unpin``, ``notes``, ``prune``, ``diff``,
-``import-legacy`` and ``doctor``; ``serve`` runs the browser manager without
+and ``doctor``; ``serve`` runs the browser manager without
 the tray, ``app`` runs the tray application, ``open`` opens the manager in
-the browser (starting the application when needed) and ``quit-app`` stops the
-running application. Add ``--json`` for one machine-readable
+the browser (starting the application when needed), ``quit-app`` stops the
+running application and ``shortcut`` adds it to the user's Start menu. Add ``--json`` for one machine-readable
 JSON document on stdout. Exit codes are stable: 0 success, 1 error, 2 usage,
 3 Word unavailable, 4 partial restore, 5 session not found or ambiguous,
 6 Word not responding.
@@ -33,7 +33,7 @@ from word_session.doctor import run_checks
 from word_session.instance import read_instance
 from word_session.logging_setup import configure_logging
 from word_session.model import DocumentState, RestoreReport, Session
-from word_session.service import ServiceError, SessionService, first_run_import, open_service
+from word_session.service import ServiceError, SessionService, open_service
 from word_session.store import AmbiguousSelector, SessionNotFound, StoreError
 from word_session.word.backend import WordError, WordNotResponding, WordUnavailable
 
@@ -130,7 +130,7 @@ def app_main() -> None:
 def _build_parser() -> argparse.ArgumentParser:
     """Build the argument parser with global options and all commands."""
     parser = argparse.ArgumentParser(
-        prog="word-session", description="Save and restore Word sessions."
+        prog="word-session-cli", description="Save and restore Word sessions."
     )
     parser.add_argument("--version", action="version", version=f"word-session {__version__}")
     parser.add_argument("--json", action="store_true", help="machine-readable output on stdout")
@@ -161,7 +161,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     list_cmd = commands.add_parser("list", help="list saved sessions, newest first")
     list_cmd.add_argument("--limit", type=int, default=20, help="default: 20")
-    list_cmd.add_argument("--kind", choices=["manual", "auto", "imported"])
+    list_cmd.add_argument("--kind", choices=["manual", "auto"])
 
     show = commands.add_parser("show", help="show one session")
     show.add_argument("selector")
@@ -190,24 +190,20 @@ def _build_parser() -> argparse.ArgumentParser:
     diff.add_argument("selector_a")
     diff.add_argument("selector_b")
 
-    legacy = commands.add_parser("import-legacy", help="import sessions of the old tools")
-    legacy.add_argument("dirs", nargs="*", metavar="DIR", help="default: the old tools' folders")
-
     commands.add_parser("doctor", help="explain why Word cannot be reached")
 
     serve = commands.add_parser("serve", help="run the browser manager without the tray")
     serve.add_argument("--port", type=int, default=0, help="TCP port (default: a free one)")
     serve.add_argument("--open", action="store_true", help="open the manager in the browser")
-    serve.add_argument(
-        "--no-import", action="store_true", help="do not import the old tools' sessions"
-    )
 
     app = commands.add_parser("app", help="run the tray application")
     app.add_argument("--open", action="store_true", help="open the manager once started")
     commands.add_parser("open", help="open the manager in the browser")
-    commands.add_parser(
-        "quit-app", help="stop the running tray application (used by the installer)"
+    commands.add_parser("quit-app", help="stop the running tray application")
+    shortcut_cmd = commands.add_parser(
+        "shortcut", help="add Word Session to your own Start menu (per user)"
     )
+    shortcut_cmd.add_argument("--remove", action="store_true", help="remove the shortcut instead")
     return parser
 
 
@@ -232,13 +228,12 @@ def _run(
         return _cmd_open(args)
     if args.command == "quit-app":
         return _cmd_quit_app()
+    if args.command == "shortcut":
+        return _cmd_shortcut(args)
 
     factory = service_factory if service_factory is not None else _default_service
     service = factory(args)
     try:
-        # Bring old sessions in once, before any command that reads the store.
-        if args.command not in ("doctor", "import-legacy", "serve", "app", "open"):
-            _announce_first_run_import(args, service)
         handlers: dict[str, Callable[[argparse.Namespace, SessionService], _Outcome]] = {
             "save": _cmd_save,
             "restore": _cmd_restore,
@@ -253,7 +248,6 @@ def _run(
             "delete": _cmd_delete,
             "prune": _cmd_prune,
             "diff": _cmd_diff,
-            "import-legacy": _cmd_import_legacy,
             "doctor": _cmd_doctor,
             "serve": _cmd_serve,
         }
@@ -269,21 +263,6 @@ def _default_service(args: argparse.Namespace) -> SessionService:
     if args.sessions_dir:
         settings = settings.model_copy(update={"sessions_dir": Path(args.sessions_dir)})
     return open_service(settings=settings, fake=args.demo)
-
-
-def _announce_first_run_import(args: argparse.Namespace, service: SessionService) -> None:
-    """Run the one-time legacy import and tell the user when it found sessions."""
-    # A broken legacy folder must never stop the command the user asked for.
-    try:
-        summary = first_run_import(service, app_paths())
-    except Exception as exc:
-        _log.warning("first-run import failed: %s", exc, exc_info=exc)
-        return
-    if summary is not None and summary.imported and not args.quiet:
-        print(
-            f"Imported {len(summary.imported)} sessions from the old word-session tools.",
-            file=sys.stderr,
-        )
 
 
 def _failure(args: argparse.Namespace, exc: Exception) -> _Outcome:
@@ -498,26 +477,6 @@ def _cmd_diff(args: argparse.Namespace, service: SessionService) -> _Outcome:
     return _Outcome(data=dataclasses.asdict(result), lines=lines)
 
 
-def _cmd_import_legacy(args: argparse.Namespace, service: SessionService) -> _Outcome:
-    """Import sessions from the old tools and report counts and errors."""
-    dirs = [Path(d) for d in args.dirs] if args.dirs else None
-    summary = service.import_legacy(dirs)
-    data = {
-        "imported": summary.imported,
-        "skipped": [str(p) for p in summary.skipped],
-        "errors": [{"path": str(p), "message": m} for p, m in summary.errors],
-    }
-    line = (
-        f"Imported {len(summary.imported)} sessions, skipped {len(summary.skipped)}, "
-        f"{len(summary.errors)} errors"
-    )
-    return _Outcome(
-        data=data,
-        lines=[line],
-        warnings=[f"error: {p}: {m}" for p, m in summary.errors],
-    )
-
-
 def _cmd_doctor(args: argparse.Namespace, service: SessionService) -> _Outcome:
     """Run the diagnostics; exit 1 when any check fails."""
     checks = run_checks(service, app_paths())
@@ -535,10 +494,6 @@ def _cmd_serve(args: argparse.Namespace, service: SessionService) -> _Outcome:
     """Serve the API and web UI until Ctrl+C (or ``serve_stop``) and exit 0."""
     # Imported here so other commands never load the web stack.
     from word_session.web.server import start_server
-
-    # Bring old sessions in once, unless the user opted out.
-    if not args.no_import:
-        _announce_first_run_import(args, service)
 
     # Reset the stop flag before the server exists, so a stop request made as
     # soon as the server is reachable can never be lost.
@@ -607,6 +562,22 @@ def _cmd_quit_app() -> _Outcome:
     if instance_file.exists():
         raise ServiceError("Word Session did not stop within 5 seconds")
     return _Outcome(data={"was_running": True}, lines=["Word Session stopped"])
+
+
+def _cmd_shortcut(args: argparse.Namespace) -> _Outcome:
+    """Create (or with ``--remove`` delete) the per-user Start menu shortcut."""
+    from word_session import shortcut
+
+    path = shortcut.shortcut_path()
+    if args.remove:
+        removed = shortcut.remove()
+        line = f"Removed {path}" if removed else "There was no Start menu shortcut"
+        return _Outcome(data={"path": str(path), "exists": False}, lines=[line])
+    try:
+        shortcut.create()
+    except (NotImplementedError, shortcut.ShortcutError) as exc:
+        raise ServiceError(str(exc)) from exc
+    return _Outcome(data={"path": str(path), "exists": True}, lines=[f"Created {path}"])
 
 
 def _cmd_open(args: argparse.Namespace) -> _Outcome:

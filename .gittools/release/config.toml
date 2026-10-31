@@ -1,0 +1,47 @@
+# Settings for .gittools/release/release.py. See README.md in this folder.
+#
+# Placeholders in titles, commands, env values and asset globs: {version}, {tag}, {commit},
+# {project} (the repository folder name) and {root} (the checkout); build commands also get {tree}
+# (the temporary worktree of HEAD) and {out} (where assets are collected). Commands see them as
+# RELEASE_VERSION, RELEASE_TAG, RELEASE_COMMIT, RELEASE_PROJECT, RELEASE_ROOT, RELEASE_TREE, RELEASE_OUT.
+
+[version]
+# The one file that holds the version, and a regular expression (multi-line mode) whose single
+# group is the version. `bump` rewrites exactly that group.
+file = "pyproject.toml"
+pattern = '''(?s)^\[project\]\s*$.*?^version\s*=\s*"([^"]+)\"'''
+
+[release]
+tag = "v{version}"
+title = "{project} {version}"
+file = "RELEASES.md"
+# Refuse to release from any other branch ("" allows every branch).
+branch = "main"
+# Remote that receives the tag and the branch ("" means the first remote).
+remote = ""
+# Refuse when tracked files have uncommitted edits, so the tests run on exactly HEAD.
+require_clean = true
+
+[test]
+# Runs in the checkout before anything changes; a failure stops the release. "" runs nothing.
+# A shell string, a list of arguments, or commands = [ ... ] for several steps.
+command = ["{root}/.venv/Scripts/python", "-m", "pytest", "-q"]
+
+[build]
+# Runs in a temporary worktree of HEAD, so uncommitted and untracked files never reach the assets.
+# The worktree has no untracked files: no .venv, no node_modules. Use {root} to reach the checkout's.
+command = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "_scripts/build.ps1"]
+cwd = "."
+# Files to attach, as globs relative to the worktree, e.g. ["dist/*.zip"]. Every glob must match.
+# Empty: a tag-only release.
+assets = ["dist/WordSession-{version}-win64.zip"]
+# Where assets and SHA256SUMS are kept, relative to the checkout ("" = .git/release-assets/<tag>).
+output = ""
+
+[publish]
+# Push the tag, create the GitHub release with the assets (gh must be signed in) and download the
+# assets again to check the uploaded bytes. false: tag and record locally only.
+github = true
+gh = "gh"
+# After recording the row, push the branch to the remote.
+push_branch = true

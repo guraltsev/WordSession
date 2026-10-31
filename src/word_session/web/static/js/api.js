@@ -90,7 +90,9 @@ export const api = {
       session: r.data,
       revision: r.etag,
     })),
-  capture: (name) => request("POST", "/api/sessions", { body: { name: name || null } }).then((r) => r.data),
+  capture: (name, paths = null) =>
+    request("POST", "/api/sessions", { body: { name: name || null, paths } }).then((r) => r.data),
+  closeDocuments: (paths) => request("POST", "/api/word/close", { body: { paths } }).then((r) => r.data),
   // Returns {session, revision}.
   patchSession: (id, revision, patch) =>
     request("PATCH", `/api/sessions/${encodeURIComponent(id)}`, {
@@ -107,7 +109,9 @@ export const api = {
 
   getSettings: () => request("GET", "/api/settings").then((r) => r.data),
   putSettings: (settings) => request("PUT", "/api/settings", { body: settings }).then((r) => r.data),
-  importLegacy: () => request("POST", "/api/import-legacy").then((r) => r.data),
+  shortcut: () => request("GET", "/api/shortcut").then((r) => r.data),
+  createShortcut: () => request("PUT", "/api/shortcut").then((r) => r.data),
+  removeShortcut: () => request("DELETE", "/api/shortcut").then((r) => r.data),
   doctor: () => request("GET", "/api/doctor").then((r) => r.data),
   logs: (tail = 200) => request("GET", `/api/logs?tail=${tail}`).then((r) => r.data.lines),
 };

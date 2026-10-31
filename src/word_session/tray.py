@@ -1,8 +1,8 @@
 """Notification-area (tray) icon and menu for the Word Session application.
 
 Call ``build_icon(app, service)`` to get a ``pystray.Icon`` whose menu saves
-and restores sessions, opens the manager and toggles autosave and start at
-login. Menu actions run on background threads so the tray never blocks, and
+and restores sessions, opens the manager or the help page and toggles
+autosave and start at login. Menu actions run on background threads so the tray never blocks, and
 the icon shows whether it is idle, working or warning about a failure.
 """
 
@@ -35,8 +35,8 @@ def build_icon(app: "App", service: SessionService) -> Any:
     Parameters
     ----------
     app : App
-        Application whose ``open_manager``, ``quit`` and ``autostart`` the
-        menu uses.
+        Application whose ``open_manager``, ``open_help``, ``quit`` and
+        ``autostart`` the menu uses.
     service : SessionService
         Service the menu items call; its ``events`` keep the icon current.
 
@@ -180,6 +180,7 @@ def build_icon(app: "App", service: SessionService) -> Any:
         ),
         pystray.MenuItem("Open sessions folder", lambda icon_, item_: open_path("sessions")),
         pystray.MenuItem("Open log", lambda icon_, item_: open_path("log")),
+        pystray.MenuItem("Help", lambda icon_, item_: app.open_help()),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Quit", lambda icon_, item_: app.quit()),
     )

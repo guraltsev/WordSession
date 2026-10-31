@@ -74,20 +74,41 @@ def app_command() -> str:
     Returns
     -------
     str
-        The quoted path of ``word-session-app.exe`` next to the running
+        The quoted path of ``word-session.exe`` next to the running
         executable when frozen; otherwise ``"<python>" -m word_session app``
         (using ``pythonw.exe`` when it sits beside the interpreter so no
         console window appears).
     """
+    target, arguments = app_launcher()
+    return f'"{target}" {arguments}'.rstrip()
+
+
+def app_launcher(*, open_manager: bool = False) -> tuple[Path, str]:
+    """Return the program and the arguments that start the application.
+
+    Parameters
+    ----------
+    open_manager : bool
+        Also open the manager in the browser once started. The frozen
+        ``word-session.exe`` always does, so this only adds ``--open``
+        when running from source.
+
+    Returns
+    -------
+    tuple of (Path, str)
+        ``word-session.exe`` next to the running executable and no
+        arguments when frozen; otherwise the interpreter (``pythonw.exe`` when
+        it sits beside it) and ``-m word_session app``.
+    """
     # A frozen build ships the windowed launcher next to the running exe.
     exe = Path(sys.executable)
     if getattr(sys, "frozen", False):
-        return f'"{exe.with_name("word-session-app.exe")}"'
+        return exe.with_name("word-session.exe"), ""
 
     # From source, prefer the windowless interpreter and run the module.
     windowless = exe.with_name("pythonw.exe")
     interpreter = windowless if windowless.exists() else exe
-    return f'"{interpreter}" -m word_session app'
+    return interpreter, "-m word_session app" + (" --open" if open_manager else "")
 
 
 def _require_windows() -> Any:

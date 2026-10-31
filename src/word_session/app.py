@@ -2,7 +2,7 @@
 
 ``App(...).run()`` starts the single per-user instance (or, when one is already
 running, asks it to open the manager in the browser) and blocks until the user
-quits from the tray. ``word-session app`` and the windowed launcher run it.
+quits from the tray. ``word-session-cli app`` and the windowed launcher run it.
 """
 
 import logging
@@ -24,7 +24,7 @@ from word_session.instance import (
     write_instance,
 )
 from word_session.logging_setup import configure_logging
-from word_session.service import SessionService, first_run_import, open_service
+from word_session.service import SessionService, open_service
 from word_session.web.server import ServerHandle
 
 _log = logging.getLogger(__name__)
@@ -93,10 +93,6 @@ class App:
             configure_logging(paths.log_dir, console_level=None)
             settings = load_settings(paths.config_file)
             service = open_service(settings=settings, fake=self._fake)
-            try:
-                first_run_import(service, paths)
-            except Exception:
-                _log.warning("first-run import failed", exc_info=True)
             from word_session.web.server import start_server
 
             self.handle = start_server(
@@ -151,6 +147,18 @@ class App:
             return
         url = f"{self.handle.url}/login?code={self.handle.auth.mint_login_code()}"
         webbrowser.open(url)
+
+    def open_help(self) -> None:
+        """Open the user guide served by the local server in the default browser.
+
+        Notes
+        -----
+        The help page needs no login. Does nothing when the server is not
+        running.
+        """
+        if self.handle is None:
+            return
+        webbrowser.open(f"{self.handle.url}/help.html")
 
     def trigger_autosave(self) -> None:
         """Wake the autosaver so new autosave settings apply immediately."""

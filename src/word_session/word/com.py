@@ -76,7 +76,8 @@ class ComWordBackend:
             pythoncom.GetActiveObject(pywintypes.IID("Word.Application"))
         except pywintypes.com_error as exc:
             _log.debug("Word not reachable: hresult=%s", getattr(exc, "hresult", None))
-            return False
+            # Word with no document open is not in the Running Object Table.
+            return _word_process_exists()
         return True
 
     def connect(self, *, start_if_needed: bool) -> None:
@@ -229,7 +230,7 @@ class ComWordBackend:
                 self._reactivate(previous, document)
                 return
 
-            # Fall back to page and line, as the legacy tool did.
+            # Fall back to page and line.
             if pos.page is not None:
                 document.Activate()
                 selection = document.Windows.Item(1).Selection
@@ -246,6 +247,15 @@ class ComWordBackend:
             if document is None:
                 raise WordError(f"Document is not open: {path}")
             document.Activate()
+
+    def close_document(self, path: str) -> None:
+        """Close the open document with this path without saving it."""
+        app = self._require_app()
+        with _translated():
+            document = self._find_document(app, path)
+            if document is None:
+                raise WordError(f"Document is not open: {path}")
+            document.Close(wd.wdDoNotSaveChanges)
 
     def disconnect(self) -> None:
         """Drop the Word reference (quitting a private isolated Word); never raises."""
@@ -299,9 +309,16 @@ class ComWordBackend:
         except pywintypes.com_error as exc:
             hresult = getattr(exc, "hresult", None)
             _log.debug("Attach failed: hresult=%s", hresult)
-            if hresult == wd.MK_E_UNAVAILABLE:
+            if hresult != wd.MK_E_UNAVAILABLE:
+                raise _translate_com_error(exc) from exc
+            # Word showing no document is running but unregistered; its class
+            # factory still hands out the running instance, so attach that way.
+            if not _word_process_exists():
                 return None
-            raise _translate_com_error(exc) from exc
+            try:
+                return win32com.client.dynamic.Dispatch("Word.Application")
+            except pywintypes.com_error as dispatch_exc:
+                raise _translate_com_error(dispatch_exc) from dispatch_exc
         return win32com.client.dynamic.Dispatch(dispatch)
 
     @staticmethod
@@ -400,6 +417,46 @@ class ComWordBackend:
             had_unsaved_changes=unsaved,
             window=window_state,
         )
+
+
+# -- Process check ---------------------------------------------------------------
+
+
+def _word_process_exists() -> bool:
+    """Return whether a WINWORD.EXE process exists (no console window, Windows only)."""
+    import ctypes
+    from ctypes import wintypes
+
+    class _Entry(ctypes.Structure):
+        _fields_ = (
+            ("dwSize", wintypes.DWORD),
+            ("cntUsage", wintypes.DWORD),
+            ("th32ProcessID", wintypes.DWORD),
+            ("th32DefaultHeapID", ctypes.c_size_t),
+            ("th32ModuleID", wintypes.DWORD),
+            ("cntThreads", wintypes.DWORD),
+            ("th32ParentProcessID", wintypes.DWORD),
+            ("pcPriClassBase", wintypes.LONG),
+            ("dwFlags", wintypes.DWORD),
+            ("szExeFile", wintypes.WCHAR * 260),
+        )
+
+    kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+    kernel32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+    snapshot = kernel32.CreateToolhelp32Snapshot(0x2, 0)  # TH32CS_SNAPPROCESS
+    if snapshot in (None, wintypes.HANDLE(-1).value):
+        return False
+    try:
+        entry = _Entry()
+        entry.dwSize = ctypes.sizeof(_Entry)
+        more = kernel32.Process32FirstW(wintypes.HANDLE(snapshot), ctypes.byref(entry))
+        while more:
+            if entry.szExeFile.lower() == "winword.exe":
+                return True
+            more = kernel32.Process32NextW(wintypes.HANDLE(snapshot), ctypes.byref(entry))
+    finally:
+        kernel32.CloseHandle(wintypes.HANDLE(snapshot))
+    return False
 
 
 # -- Error translation ---------------------------------------------------------

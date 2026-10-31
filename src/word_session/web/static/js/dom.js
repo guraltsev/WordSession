@@ -33,7 +33,43 @@ export function labelled(text, input) {
   counter += 1;
   const id = `field-${counter}`;
   input.id = id;
-  return { field: h("div", { class: "field" }, h("label", { for: id }, text), input), input };
+  return { field: h("div", { class: "field" }, h("label", { for: id, title: input.title || undefined }, text), input), input };
+}
+
+// A small "?" link that opens the help page at `anchor` in a new tab.
+export function helpLink(anchor, topic) {
+  return h(
+    "a",
+    {
+      class: "help-link",
+      href: `help.html#${anchor}`,
+      target: "_blank",
+      rel: "noopener",
+      title: `Help: ${topic} (opens in a new tab)`,
+      "aria-label": `Help: ${topic}`,
+    },
+    "?",
+  );
+}
+
+// An element followed by its "?" help link.
+export function withHelp(el, anchor, topic) {
+  return h("span", { class: "with-help" }, el, helpLink(anchor, topic));
+}
+
+// A heading with a "?" help link beside it (outside the heading, so the
+// heading's accessible name stays its text).
+export function helpHeading(tag, text, anchor, topic = text, tip = undefined) {
+  return h("div", { class: "heading-row" }, h(tag, { title: tip }, text), helpLink(anchor, topic));
+}
+
+// Put a "?" help link beside the label of a field built by labelled().
+export function addFieldHelp(field, anchor, topic) {
+  const label = field.firstElementChild;
+  const row = h("span", { class: "with-help" });
+  label.replaceWith(row);
+  row.append(label, helpLink(anchor, topic));
+  return field;
 }
 
 export function formatDate(iso) {
@@ -84,10 +120,15 @@ export function toastError(error) {
 }
 
 // Ask a question in a modal dialog; resolves to true when confirmed.
-export function confirmDialog(title, message, confirmLabel) {
+// `confirmTip` is the tooltip of the confirm button.
+export function confirmDialog(title, message, confirmLabel, confirmTip = confirmLabel) {
   return new Promise((resolve) => {
-    const confirm = h("button", { type: "submit", class: "danger", value: "yes" }, confirmLabel);
-    const cancel = h("button", { type: "submit", value: "no", formnovalidate: true }, "Cancel");
+    const confirm = h("button", { type: "submit", class: "danger", value: "yes", title: confirmTip }, confirmLabel);
+    const cancel = h(
+      "button",
+      { type: "submit", value: "no", formnovalidate: true, title: "Close without changing anything" },
+      "Cancel",
+    );
     const dialog = h(
       "dialog",
       { "aria-label": title },
@@ -104,11 +145,19 @@ export function confirmDialog(title, message, confirmLabel) {
 }
 
 // Ask for one line of text in a modal dialog; resolves to the text or null.
-export function promptDialog(title, label, confirmLabel) {
+// `confirmTip` is the tooltip of the confirm button.
+export function promptDialog(title, label, confirmLabel, confirmTip = confirmLabel) {
   return new Promise((resolve) => {
-    const { field, input } = labelled(label, h("input", { type: "text", autocomplete: "off" }));
-    const ok = h("button", { type: "submit", class: "primary", value: "yes" }, confirmLabel);
-    const cancel = h("button", { type: "submit", value: "no", formnovalidate: true }, "Cancel");
+    const { field, input } = labelled(
+      label,
+      h("input", { type: "text", autocomplete: "off", title: "Type the text, then press Enter to confirm or Esc to cancel." }),
+    );
+    const ok = h("button", { type: "submit", class: "primary", value: "yes", title: confirmTip }, confirmLabel);
+    const cancel = h(
+      "button",
+      { type: "submit", value: "no", formnovalidate: true, title: "Close without saving" },
+      "Cancel",
+    );
     const dialog = h(
       "dialog",
       { "aria-label": title },

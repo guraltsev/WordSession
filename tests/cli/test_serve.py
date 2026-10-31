@@ -59,7 +59,7 @@ def test_serve_runs_and_stops(captured: dict[str, Any], capsys: pytest.CaptureFi
 
 
 def test_serve_open_launches_browser_with_login_url(captured: dict[str, Any]) -> None:
-    thread, codes = _run_serve(["--demo", "serve", "--open", "--no-import"], captured)
+    thread, codes = _run_serve(["--demo", "serve", "--open"], captured)
     handle: ServerHandle = captured["handle"]
     cli.serve_stop.set()
     thread.join(10)
@@ -94,4 +94,4 @@ def test_serve_ends_on_keyboard_interrupt(
             raise KeyboardInterrupt
 
     monkeypatch.setattr(cli, "serve_stop", InterruptingEvent())
-    assert cli.main(["--demo", "serve", "--no-import"]) == 0
+    assert cli.main(["--demo", "serve"]) == 0

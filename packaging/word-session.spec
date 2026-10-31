@@ -39,8 +39,8 @@ shared = dict(
 cli_analysis = Analysis([str(ROOT / "packaging" / "entry_cli.py")], **shared)  # noqa: F821
 app_analysis = Analysis([str(ROOT / "packaging" / "entry_app.py")], **shared)  # noqa: F821
 MERGE(  # noqa: F821
-    (cli_analysis, "word-session", "word-session"),
-    (app_analysis, "word-session-app", "word-session-app"),
+    (cli_analysis, "word-session-cli", "word-session-cli"),
+    (app_analysis, "word-session", "word-session"),
 )
 
 icon = str(ROOT / "packaging" / "icons" / "app.ico")
@@ -50,22 +50,22 @@ cli_exe = EXE(  # noqa: F821
     cli_analysis.scripts,
     [],
     exclude_binaries=True,
-    name="word-session",
+    name="word-session-cli",
     console=True,
     icon=icon,
     upx=False,
-    version=build_version_info("word-session.exe", "Word Session command line"),
+    version=build_version_info("word-session-cli.exe", "Word Session command line"),
 )
 app_exe = EXE(  # noqa: F821
     PYZ(app_analysis.pure),  # noqa: F821
     app_analysis.scripts,
     [],
     exclude_binaries=True,
-    name="word-session-app",
+    name="word-session",
     console=False,
     icon=icon,
     upx=False,
-    version=build_version_info("word-session-app.exe", "Word Session tray application"),
+    version=build_version_info("word-session.exe", "Word Session tray application"),
 )
 
 COLLECT(  # noqa: F821

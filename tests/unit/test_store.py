@@ -231,18 +231,17 @@ def test_prune(store: SessionStore) -> None:
     for minutes in range(5):
         store.save(at(minutes, f"auto{minutes}", kind="auto"))
     store.save(at(10, "manual", kind="manual"))
-    store.save(at(11, "imported", kind="imported"))
     store.save(at(-5, "pinned", kind="auto", pinned=True))
 
     removed = store.prune(2)
     assert removed == [at(2, "auto2").id, at(1, "auto1").id, at(0, "auto0").id]
     remaining = {s.name for s in store.list()}
-    assert remaining == {"auto3", "auto4", "manual", "imported", "pinned"}
+    assert remaining == {"auto3", "auto4", "manual", "pinned"}
     assert (store.trash_dir / f"{at(0, 'auto0').id}.json").is_file()
 
     assert store.prune(2) == []
     assert store.prune(0) == [at(4, "auto4").id, at(3, "auto3").id]
-    assert {s.name for s in store.list()} == {"manual", "imported", "pinned"}
+    assert {s.name for s in store.list()} == {"manual", "pinned"}
 
 
 def test_prune_negative(store: SessionStore) -> None:

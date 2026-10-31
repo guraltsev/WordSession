@@ -203,7 +203,7 @@ class SessionStore:
 
         Notes
         -----
-        Manual, imported and pinned sessions are never pruned.
+        Manual and pinned sessions are never pruned.
         """
         if keep < 0:
             raise ValueError(f"keep must be >= 0, got {keep}")

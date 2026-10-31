@@ -19,7 +19,6 @@ NAMES = [
     "sessions-dir",
     "config",
     "log",
-    "legacy",
 ]
 
 
@@ -52,7 +51,6 @@ def test_all_ten_checks_in_order_when_healthy(service: SessionService) -> None:
     assert checks["sessions-dir"].status == "ok"
     assert checks["config"].status == "ok"
     assert checks["log"].detail.endswith("word-session.log")
-    assert checks["legacy"].status == "ok"
 
 
 def test_pywin32_status_matches_platform(service: SessionService) -> None:
@@ -101,7 +99,6 @@ def test_bad_config_fails_without_stopping_others(service: SessionService) -> No
     app_paths().config_file.write_text("this is = = not toml", encoding="utf-8")
     checks = _checks(service)
     assert checks["config"].status == "fail"
-    assert checks["legacy"].status == "ok"
 
 
 def test_exception_in_check_becomes_fail(
@@ -114,10 +111,3 @@ def test_exception_in_check_becomes_fail(
     checks = _checks(service)
     assert checks["sessions-dir"].status == "fail"
     assert checks["sessions-dir"].detail == "store exploded"
-    assert checks["legacy"].name == "legacy"
-
-
-def test_legacy_reports_marker(service: SessionService) -> None:
-    assert "first-run import done: no" in _checks(service)["legacy"].detail
-    (app_paths().data_dir / ".legacy-imported").write_text("x", encoding="utf-8")
-    assert "first-run import done: yes" in _checks(service)["legacy"].detail

@@ -78,7 +78,7 @@ def test_invalid_code_shows_expired_page(anon_client: TestClient) -> None:
     response = anon_client.get("/login?code=nope", follow_redirects=False)
     assert response.status_code == 403
     assert "This link has expired" in response.text
-    assert "word-session open" in response.text
+    assert "word-session-cli open" in response.text
 
 
 def test_expired_code_is_rejected(service: SessionService) -> None:

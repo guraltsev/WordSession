@@ -110,10 +110,10 @@ def test_non_windows_behaviour(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_app_command_frozen(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    exe = tmp_path / "Word Session" / "word-session.exe"
+    exe = tmp_path / "Word Session" / "word-session-cli.exe"
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     monkeypatch.setattr(sys, "executable", str(exe))
-    assert autostart.app_command() == f'"{exe.with_name("word-session-app.exe")}"'
+    assert autostart.app_command() == f'"{exe.with_name("word-session.exe")}"'
 
 
 def test_app_command_from_source(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -123,3 +123,15 @@ def test_app_command_from_source(monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     assert autostart.app_command() == f'"{python}" -m word_session app'
     (tmp_path / "pythonw.exe").write_bytes(b"")
     assert autostart.app_command() == f'"{tmp_path / "pythonw.exe"}" -m word_session app'
+
+
+def test_app_launcher_open_manager(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.delattr(sys, "frozen", raising=False)
+    monkeypatch.setattr(sys, "executable", str(tmp_path / "python.exe"))
+    assert autostart.app_launcher(open_manager=True) == (
+        tmp_path / "python.exe",
+        "-m word_session app --open",
+    )
+    # The frozen windowed launcher always opens the manager by itself.
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    assert autostart.app_launcher(open_manager=True) == (tmp_path / "word-session.exe", "")
