@@ -21,7 +21,7 @@ the run and waits for the human.
 | 12 | CLI core commands | 11 | | done | 1 | 6aa3a4f | |
 | 13 | CLI management commands | 12 | | done | 1 | 9512545 | |
 | 14 | End-to-end CLI tests against real Word | 09, 13 | isolated + shared | todo | 0 | | |
-| 15 | HTTP API | 11 | | in-progress | 1 | | |
+| 15 | HTTP API | 11 | | done | 1 | d05e209 | |
 | 16 | Web UI and `serve` | 15, 13 | | todo | 0 | | |
 | 17 | UI smoke tests (Playwright) | 16 | | todo | 0 | | |
 | 18 | Tray app, single instance, `open`, autostart | 16 | | todo | 0 | | |

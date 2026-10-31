@@ -7,3 +7,4 @@ Coordinator log of job-text edits and judgement calls (run started 2026-10-31).
 - Job 02: executor's ruff format rewrote job texts 04-19 (md code blocks); coordinator restored them with git checkout, executor added [tool.ruff.format] exclude *.md (accepted).
 - Human's WINWORD.EXE PID 60884 running at start of job 09 (baseline; never kill). Jobs 09/10 run in parallel (disjoint files).
 - Job 06: coordinator added '-text' rule for tests/fixtures/legacy/* to .gitattributes (executor's suggestion; bytes must stay exact).
+- Job 15 report: EventSource cannot send X-Word-Session header; edited job 16 text to use fetch-streamed SSE parsing instead (header rule kept).
