@@ -1,0 +1,62 @@
+[project]
+name = "word-session"
+version = "0.1.0"
+description = "Save and restore Microsoft Word sessions"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "pydantic>=2.8",
+    "platformdirs>=4",
+    "tomli-w>=1",
+    "pywin32>=308; sys_platform == 'win32'",
+]
+
+[project.scripts]
+word-session = "word_session.cli:main"
+
+[project.gui-scripts]
+word-session-app = "word_session.cli:app_main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/word_session"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "ruff>=0.6",
+    "pyright>=1.1.380",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests"]
+extend-exclude = ["legacy"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "PTH", "RUF"]
+ignore = ["E501"]
+
+[tool.pyright]
+include = ["src", "tests"]
+exclude = ["legacy"]
+pythonVersion = "3.13"
+typeCheckingMode = "standard"
+reportMissingModuleSource = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "word: drives a real Microsoft Word (needs WORD_SESSION_TEST_WORD=1)",
+    "shared_word: attaches to the user's running Word (needs WORD_SESSION_TEST_SHARED_WORD=1)",
+    "ui: browser UI tests (needs Playwright browsers)",
+]
+
+[tool.ruff.format]
+# Only format Python sources, not code blocks embedded in Markdown.
+exclude = ["*.md"]
