@@ -60,6 +60,17 @@ set WORD_SESSION_TEST_WORD=1
 uv run pytest -m word
 ```
 
+Run the browser UI tests (Playwright, demo backend; skipped unless enabled):
+
+```text
+uv run playwright install chromium
+set WORD_SESSION_TEST_UI=1
+uv run pytest -m ui
+```
+
+The UI tests start the server in-process on a free port with the fake Word
+backend and a temporary `WORD_SESSION_HOME`; no real Word is involved.
+
 ## CI
 
 GitHub Actions on `windows-latest`: `uv sync --frozen`, ruff, type check,
