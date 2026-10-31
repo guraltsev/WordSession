@@ -10,3 +10,5 @@ Coordinator log of job-text edits and judgement calls (run started 2026-10-31).
 - Job 15 report: EventSource cannot send X-Word-Session header; edited job 16 text to use fetch-streamed SSE parsing instead (header rule kept).
 - Job 09: coordinator re-ran 30 word+shared_word tests (pass, only human PID 60884 remains). Out-of-scope: doctor.py:204 invalid \W escape in docstring (SyntaxWarning) - check/fix in a later job touching doctor.py.
 - Job 16: stray demo serve processes PIDs 17456, 68768 could not be killed (permission denied); listed in human-test-items.md. Not retried.
+- D5: iscc.exe (Inno Setup) not installed; job 21 writes installer.iss uncompiled, zip is the verified artifact; compile/test installer listed for human.
+- Job 14: 9 leaked isolated Word PIDs (see human-test-items.md); kill denied, not retried. Coordinator re-ran e2e word+shared tests: 10 passed, no new leaks. Job 21: Inno Setup absent -> report status partial, accepted as done under D5 fallback (installer.iss uncompiled; human items listed).

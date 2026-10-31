@@ -20,13 +20,13 @@ the run and waits for the human.
 | 11 | Session service | 05, 06, 07, 10 | | done | 1 | 1bc55ed | |
 | 12 | CLI core commands | 11 | | done | 1 | 6aa3a4f | |
 | 13 | CLI management commands | 12 | | done | 1 | 9512545 | |
-| 14 | End-to-end CLI tests against real Word | 09, 13 | isolated + shared | in-progress | 1 | | |
+| 14 | End-to-end CLI tests against real Word | 09, 13 | isolated + shared | done | 1 | 9ab458a | |
 | 15 | HTTP API | 11 | | done | 1 | d05e209 | |
 | 16 | Web UI and `serve` | 15, 13 | | done | 1 | 88e7057 | |
 | 17 | UI smoke tests (Playwright) | 16 | | done | 1 | 48be651 | |
 | 18 | Tray app, single instance, `open`, autostart | 16 | | done | 1 | ec11781 | |
 | 19 | Autosave | 18 | | done | 1 | 1d87e2a | |
 | 20 | Packaging (PyInstaller) and `.cmd` shims | 19 | | done | 1 | 4039add | |
-| 21 | Installer, user docs, release prep | 20 | | todo | 0 | | |
+| 21 | Installer, user docs, release prep | 20 | | done | 1 | 1b29095 | installer.iss uncompiled (no iscc) |
 | 23 | Human handoff | 21 | | todo | 0 | | final step of the run |
 | 22 | Decommission legacy | 23 + human request | | todo | 0 | | outside the run |
