@@ -15,8 +15,8 @@ the run and waits for the human.
 | 06 | Legacy readers and import | 05 | | in-progress | 1 | | |
 | 07 | Config, paths, logging | 02 | | done | 1 | d5db01f | |
 | 08 | Word backend protocol and fake | 04 | | done | 1 | 186fec8 | |
-| 09 | COM backend | 08 | isolated + shared | todo | 0 | | |
-| 10 | COM worker | 08 | | todo | 0 | | |
+| 09 | COM backend | 08 | isolated + shared | in-progress | 1 | | |
+| 10 | COM worker | 08 | | done | 1 | 88ba64e | |
 | 11 | Session service | 05, 06, 07, 10 | | todo | 0 | | |
 | 12 | CLI core commands | 11 | | todo | 0 | | |
 | 13 | CLI management commands | 12 | | todo | 0 | | |
